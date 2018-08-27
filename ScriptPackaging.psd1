@@ -20,11 +20,8 @@
     # The company or vendor for this module.
     CompanyName = 'MosaicMK Software'
 
-    # The copyright statement for this module.
-    Copyright = 'MosaicMK Software. All rights reserved.'
-
     # The version of this module.
-    ModuleVersion = '1.0'
+    ModuleVersion = '1.0.0.1'
 
     # A description of this module.
     Description = 'Tools used to package PowerShell script or script resorces'

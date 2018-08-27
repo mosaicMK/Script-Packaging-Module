@@ -7,12 +7,14 @@ function Convert-PS2EXE {
 	A generated executables has the following reserved parameters:
 
 	-debug Forces the executable to be debugged. It calls "System.Diagnostics.Debugger.Break()".
-	-extract:<FILENAME> Extracts the powerShell script inside the executable and saves it as FILENAME.
                     The script will not be executed.
 	-wait           At the end of the script execution it writes "Hit any key to exit..." and waits for a key to be pressed.
 	-end            All following options will be passed to the script inside the executable.
-                    All preceding options are used by the executable itself and will not be passed to the script
-	
+					All preceding options are used by the executable itself and will not be passed to the script
+
+    The Extract parameter has been removed to help protect the source code, This doesn't make the source code secure but dose make it
+    Harder to be retrieved
+
 	Script variables:
 	Since PS2EXE converts a script to an executable, script related variables are not available anymore. Especially the variable $PSScriptRoot is empty.
 	The variable $MyInvocation is set to other values than in a script.
@@ -202,21 +204,7 @@ if ($requireAdmin -And $virtualize)
 	exit -1
 }
 
-if (!$runtime20 -and !$runtime40)
-{
-	if ($psversion -eq 4)
-	{
-		$runtime40 = $TRUE
-	}
-	elseif ($psversion -eq 3)
-	{
-		$runtime40 = $TRUE
-	}
-	else
-	{
-		$runtime20 = $TRUE
-	}
-}
+if (!$runtime20 -and !$runtime40){if ($psversion -eq 4){$runtime40 = $TRUE}elseif($psversion -eq 3){$runtime40 = $TRUE}else{$runtime20 = $TRUE}}
 
 if ($psversion -ge 3 -and $runtime20)
 {
@@ -270,17 +258,11 @@ if ($psversion -lt 3 -and $runtime40)
 	exit -1
 }
 
-if ($psversion -lt 3 -and !$Mta -and !$Sta)
-{
-	# Set default apartment mode for powershell version if not set by parameter
-	$Mta = $TRUE
-}
+# Set default apartment mode for powershell version if not set by parameter
+if ($psversion -lt 3 -and !$Mta -and !$Sta){$Mta = $TRUE}
 
-if ($psversion -ge 3 -and !$Mta -and !$Sta)
-{
-	# Set default apartment mode for powershell version if not set by parameter
-	$Sta = $TRUE
-}
+# Set default apartment mode for powershell version if not set by parameter
+if ($psversion -ge 3 -and !$Mta -and !$Sta){$Sta = $TRUE}
 
 # escape escape sequences in version info
 $title = $title -replace "\\", "\\"
@@ -306,16 +288,13 @@ $type = $type.MakeGenericType( @( ("System.String" -as "Type"), ("system.string"
 $o = [Activator]::CreateInstance($type)
 
 $compiler20 = $FALSE
-if ($psversion -eq 3 -or $psversion -eq 4)
-{
+if ($psversion -eq 3 -or $psversion -eq 4){
 	$o.Add("CompilerVersion", "v4.0")
 }
-else
-{
+else{
 	if (Test-Path ("$ENV:WINDIR\Microsoft.NET\Framework\v3.5\csc.exe"))
 	{ $o.Add("CompilerVersion", "v3.5") }
-	else
-	{
+	else{
 		Write-Warning "No .Net 3.5 compiler found, using .Net 2.0 compiler."
 		Write-Warning "Therefore some methods are not available!"
 		$compiler20 = $TRUE
@@ -324,24 +303,16 @@ else
 }
 
 $referenceAssembies = @("System.dll")
-if (!$noConsole)
-{
-	if ([System.AppDomain]::CurrentDomain.GetAssemblies() | ? { $_.ManifestModule.Name -ieq "Microsoft.PowerShell.ConsoleHost.dll" })
-	{
-		$referenceAssembies += ([System.AppDomain]::CurrentDomain.GetAssemblies() | ? { $_.ManifestModule.Name -ieq "Microsoft.PowerShell.ConsoleHost.dll" } | Select -First 1).Location
-	}
-}
+if (!$noConsole){if ([System.AppDomain]::CurrentDomain.GetAssemblies() | ? { $_.ManifestModule.Name -ieq "Microsoft.PowerShell.ConsoleHost.dll" }){$referenceAssembies += ([System.AppDomain]::CurrentDomain.GetAssemblies() | ? { $_.ManifestModule.Name -ieq "Microsoft.PowerShell.ConsoleHost.dll" } | Select -First 1).Location}}
 $referenceAssembies += ([System.AppDomain]::CurrentDomain.GetAssemblies() | ? { $_.ManifestModule.Name -ieq "System.Management.Automation.dll" } | Select -First 1).Location
 
-if ($runtime40)
-{
+if ($runtime40){
 	$n = New-Object System.Reflection.AssemblyName("System.Core, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")
 	[System.AppDomain]::CurrentDomain.Load($n) | Out-Null
 	$referenceAssembies += ([System.AppDomain]::CurrentDomain.GetAssemblies() | ? { $_.ManifestModule.Name -ieq "System.Core.dll" } | Select -First 1).Location
 }
 
-if ($noConsole)
-{
+if ($noConsole){
 	$n = New-Object System.Reflection.AssemblyName("System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")
 	if ($runtime40){$n = New-Object System.Reflection.AssemblyName("System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")}
 	[System.AppDomain]::CurrentDomain.Load($n) | Out-Null
@@ -370,17 +341,15 @@ if ($requireAdmin)
 {
 	$win32manifest = "<?xml version=""1.0"" encoding=""UTF-8"" standalone=""yes""?>`r`n<assembly xmlns=""urn:schemas-microsoft-com:asm.v1"" manifestVersion=""1.0"">`r`n<trustInfo xmlns=""urn:schemas-microsoft-com:asm.v2"">`r`n<security>`r`n<requestedPrivileges xmlns=""urn:schemas-microsoft-com:asm.v3"">`r`n<requestedExecutionLevel level=""requireAdministrator"" uiAccess=""false""/>`r`n</requestedPrivileges>`r`n</security>`r`n</trustInfo>`r`n</assembly>"
 	$win32manifest | Set-Content ($outputFile+".win32manifest") -Encoding UTF8
-
 	$reqAdmParam = "`"/win32manifest:$($outputFile+".win32manifest")`""
 }
 
-if (!$virtualize)
-{ $cp.CompilerOptions = "/platform:$($platform) /target:$( if ($noConsole){'winexe'}else{'exe'}) $($iconFileParam) $($reqAdmParam)" }
-else
-{ Write-Host "Application virtualization is activated, forcing x86 platfom."
-	$cp.CompilerOptions = "/platform:x86 /target:$( if ($noConsole) { 'winexe' } else { 'exe' } ) /nowin32manifest $($iconFileParam)"
-}
-
+if (!$virtualize){
+	$cp.CompilerOptions = "/platform:$($platform) /target:$( if ($noConsole){'winexe'}else{'exe'}) $($iconFileParam) $($reqAdmParam)" }
+	else{
+		Write-Host "Application virtualization is activated, forcing x86 platfom."
+		$cp.CompilerOptions = "/platform:x86 /target:$( if ($noConsole) { 'winexe' } else { 'exe' } ) /nowin32manifest $($iconFileParam)"
+	}
 $cp.IncludeDebugInformation = $debugEXE
 
 if ($debugEXE){$cp.TempFiles.KeepFiles = $TRUE}
@@ -411,6 +380,7 @@ if ($lcid)
 $programFrame = @"
 // Simple PowerShell host created by Ingo Karstein (http://blog.karstein-consulting.com) for PS2EXE
 // Reworked and GUI support by Markus Scholtes
+// Module incorperation and help syntacs creation by Kris Gross
 
 using System;
 using System.Collections.Generic;
@@ -2206,7 +2176,6 @@ $(if (!$noConsole) {@"
 			PS2EXE me = new PS2EXE();
 
 			bool paramWait = false;
-			string extractFN = string.Empty;
 
 			PS2EXEHostUI ui = new PS2EXEHostUI();
 			PS2EXEHost host = new PS2EXEHost(me, ui);
@@ -2271,20 +2240,6 @@ $(if (!$runtime20) {@"
 						{
 							if (string.Compare(s, "-wait", true) == 0)
 								paramWait = true;
-							else if (s.StartsWith("-extract", StringComparison.InvariantCultureIgnoreCase))
-							{
-								string[] s1 = s.Split(new string[] { ":" }, 2, StringSplitOptions.RemoveEmptyEntries);
-								if (s1.Length != 2)
-								{
-$(if (!$noConsole) {@"
-									Console.WriteLine("If you specify the -extract option you need to add a file for extraction in this way\r\n   -extract:\"<filename>\"");
-"@ } else {@"
-									MessageBox.Show("If you specify the -extract option you need to add a file for extraction in this way\r\n   -extract:\"<filename>\"", System.AppDomain.CurrentDomain.FriendlyName, MessageBoxButtons.OK, MessageBoxIcon.Error);
-"@ })
-									return 1;
-								}
-								extractFN = s1[1].Trim(new char[] { '\"' });
-							}
 							else if (string.Compare(s, "-end", true) == 0)
 							{
 								separator = idx + 1;
@@ -2299,12 +2254,6 @@ $(if (!$noConsole) {@"
 						}
 
 						string script = System.Text.Encoding.UTF8.GetString(System.Convert.FromBase64String(@"$($script)"));
-
-						if (!string.IsNullOrEmpty(extractFN))
-						{
-							System.IO.File.WriteAllText(extractFN, script);
-							return 0;
-						}
 
 						powershell.AddScript(script);
 
@@ -2540,9 +2489,8 @@ function Convert-FileToDLL {
 
     .NOTES
     Created By: Kris Gross
-    Contact: Kris.Gross@mosaicMK.com
-    Twitter: @kmgamd
-    Version 1.0.0.0
+    Contact: Contact@mosaicMK.com
+    Version 1.0.0.1
 
     To Use the dll in a script
     $Path = <Path to DLL>

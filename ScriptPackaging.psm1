@@ -2516,7 +2516,8 @@ function Convert-FileToDLL {
 	$secure = ConvertTo-SecureString $script -asPlainText -force
 	$export = $secure | ConvertFrom-SecureString -Key $key
 	Set-Content $OutScript $export
-	Set-Content $OutScript.Key.txt $key
+	$OutKey = $OutScript -replace ".dll",".txt"
+	Set-Content $OutKey $key
 	Write-Host "Script $InScript has been encrypted as $OutScript"
 	Write-Host "Your Key: $Key"
 }

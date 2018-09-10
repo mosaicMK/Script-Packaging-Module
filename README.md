@@ -34,3 +34,6 @@ You can use the fallowing to decypt the file and run it from another PowerShell 
     $script = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto($BSTR)
     Invoke-Expression $script
 ```
+### Convert-StringToSecureString
+
+This command will encrypt a string to a secure string providing you with a key and the options to export the string and key to a file

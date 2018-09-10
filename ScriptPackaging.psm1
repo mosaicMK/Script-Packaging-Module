@@ -2478,19 +2478,25 @@ function Convert-FileToDLL {
     .DESCRIPTION
     Convert a PowerShell script file to a encryped dll file using 256bit AES encryption
 
-    .PARAMETER InScript
+    .PARAMETER InFile
     Path to the PowerShell script
 
-    .PARAMETER OutScript
-    Path to the dll file
+    .PARAMETER OutFile
+	Path to the dll file
+
+	.PARAMETER KeyToFile
+	Path to where the key is to be written
+
+	.PARAMETER KeyToHost
+	Writes the key to the host window
 
     .EXAMPLE
-    PS2DLL.ps1 -InScript C:\Read-File.ps1 -OutFile C:\Read-File.dll
+    PS2DLL.ps1 -InFile C:\Read-File.ps1 -OutFile C:\Read-File.dll -KeyToFle
 
     .NOTES
     Created By: Kris Gross
     Contact: Contact@mosaicMK.com
-    Version 1.0.0.1
+    Version 1.0.1.2
 
     To Use the dll in a script
     $Path = <Path to DLL>
@@ -2506,18 +2512,83 @@ function Convert-FileToDLL {
 	PARAM
 	(
 		[Parameter(Mandatory=$true)]
-		[string]$InScript,
-		[Parameter(Mandatory=$true)]
-		[string]$OutScript
+		[string]$InFile,
+		[Parameter(Mandatory=$true,HelpMessage="Must be a DLL file")]
+		[ValidateScript({$_ -like "*.dll"})]
+		[string]$OutFile,
+		[switch]$KeyToFile,
+		[switch]$KeyToHost
 	)
 
-	[byte[]]$Key = (0..100) | Get-Random -Count 32
-	$script = Get-Content $InScript | Out-String
+	[byte[]]$Key = (0..100) + (100..200)| Get-Random -Count 32
+	$script = Get-Content $InFile | Out-String
 	$secure = ConvertTo-SecureString $script -asPlainText -force
 	$export = $secure | ConvertFrom-SecureString -Key $key
-	Set-Content $OutScript $export
-	$OutKey = $OutScript -replace ".dll",".txt"
-	Set-Content $OutKey $key
-	Write-Host "Script $InScript has been encrypted as $OutScript"
-	Write-Host "Your Key: $Key"
+	Set-Content $OutFile $export
+	IF ($KeyToFile){
+		$KeyFile =  $OutFile -replace ".dll",".txt"
+		Set-Content $KeyFile $Key
+	}
+	Write-Host "Script $InFile has been encrypted as $OutFile"
+	If ($KeyToHost -or !($KeyToFile)){
+		[string]$outKey = $key -join ","
+		Write-Host "Your Key: $outkey"
+	}
+}
+
+
+function Convert-StringToSecureString {
+	<#
+    .SYNOPSIS
+    Convert string to a secure string
+
+    .DESCRIPTION
+    Convert a strign to a 256 bit ecrypet string to be used in a script
+
+    .PARAMETER InString
+    The string to be encrypted
+
+	.PARAMETER SecureStringToFile
+	Writes the secure stringto a file
+
+	.PARAMETER SecureStringToHost
+	Writes the string to the host window
+
+	.PARAMETER KeyToFile
+	Writes the decryption key to a file
+
+	.PARAMETER KeyToHost
+	Writes the decryption key to the host window
+
+
+	.EXAMPLE
+	Convert-StringToSecureString -InString "John Smith lives at 8888 Park Drive" -SecureStringToHost -KeyToHost
+	Encrypts the string "John Smith lives at 8888 Park Drive" and Write they encrypted string to the host and the
+	key used to encrypt the string.
+
+
+    .NOTES
+    Created By: Kris Gross
+    Contact: Contact@mosaicMK.com
+    Version 1.0.0.0
+
+    .LINK
+    http://www.mosaicMK.com/
+#>
+		PARAM(
+		[Parameter(Mandatory=$true)]
+		[string]$InString,
+		[string]$SecureStringToFile,
+		[switch]$SecureStringToHost,
+		[string]$KeyToFile,
+		[switch]$KeyToHost
+	)
+
+	[byte[]]$Key = (0..100) + (100..200)| Get-Random -Count 32
+	$secure = ConvertTo-SecureString $InString -asPlainText -force
+	$export = $secure | ConvertFrom-SecureString -Key $key
+	If ($SecureStringToFile){Set-Content $SecureStringToFile $export}
+	If ($SecureStringToHost){Write-Host "SecureString: $export"}
+	IF ($KeyToFile){Set-Content $KeyToFile $Key}
+	IF ($KeyToHost){Write-Host "Key: $Key"}
 }

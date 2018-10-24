@@ -303,13 +303,13 @@ else{
 }
 
 $referenceAssembies = @("System.dll")
-if (!$noConsole){if ([System.AppDomain]::CurrentDomain.GetAssemblies() | ? { $_.ManifestModule.Name -ieq "Microsoft.PowerShell.ConsoleHost.dll" }){$referenceAssembies += ([System.AppDomain]::CurrentDomain.GetAssemblies() | ? { $_.ManifestModule.Name -ieq "Microsoft.PowerShell.ConsoleHost.dll" } | Select -First 1).Location}}
-$referenceAssembies += ([System.AppDomain]::CurrentDomain.GetAssemblies() | ? { $_.ManifestModule.Name -ieq "System.Management.Automation.dll" } | Select -First 1).Location
+if (!$noConsole){if ([System.AppDomain]::CurrentDomain.GetAssemblies() | Where-Object { $_.ManifestModule.Name -ieq "Microsoft.PowerShell.ConsoleHost.dll" }){$referenceAssembies += ([System.AppDomain]::CurrentDomain.GetAssemblies() | Where-Object { $_.ManifestModule.Name -ieq "Microsoft.PowerShell.ConsoleHost.dll" } | Select-Object-Object-Object -First 1).Location}}
+$referenceAssembies += ([System.AppDomain]::CurrentDomain.GetAssemblies() | Where-Object { $_.ManifestModule.Name -ieq "System.Management.Automation.dll" } | Select -First 1).Location
 
 if ($runtime40){
 	$n = New-Object System.Reflection.AssemblyName("System.Core, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")
 	[System.AppDomain]::CurrentDomain.Load($n) | Out-Null
-	$referenceAssembies += ([System.AppDomain]::CurrentDomain.GetAssemblies() | ? { $_.ManifestModule.Name -ieq "System.Core.dll" } | Select -First 1).Location
+	$referenceAssembies += ([System.AppDomain]::CurrentDomain.GetAssemblies() | Where-Object { $_.ManifestModule.Name -ieq "System.Core.dll" } | Select -First 1).Location
 }
 
 if ($noConsole){
@@ -358,8 +358,7 @@ Write-Host "Reading input file " -NoNewline
 Write-Host $inputFile
 Write-Host ""
 $content = Get-Content -LiteralPath ($inputFile) -Encoding UTF8 -ErrorAction SilentlyContinue
-if ($content -eq $null)
-{
+if ($content -eq $null){
 	Write-Error "No data found. May be read error or file protected."
 	exit -2
 }
@@ -369,8 +368,7 @@ $script = [System.Convert]::ToBase64String(([System.Text.Encoding]::UTF8.GetByte
 #region program frame
 $culture = ""
 
-if ($lcid)
-{
+if ($lcid){
 	$culture = @"
 	System.Threading.Thread.CurrentThread.CurrentCulture = System.Globalization.CultureInfo.GetCultureInfo($lcid);
 	System.Threading.Thread.CurrentThread.CurrentUICulture = System.Globalization.CultureInfo.GetCultureInfo($lcid);
@@ -2430,20 +2428,15 @@ function Convert-FileToBase64 {
 <#
 	.SYNOPSIS
 	Convert a file to base64
-
 	.DESCRIPTION
 	You can convert any file to base64 that can later be called by a script or imbeded in a script
-
 	.PARAMETER InFile
 	The path to the file that is to be converted
-
 	.PARAMETER OutFile
 	path to the output file (this should be a txt file)
-
 	.NOTES
-	Created By: Kris Gross
-	Contact: Kris.Gross@mosaicMK.com
-	Twitter: @kmgamd
+	Created By: MosaicMK Software
+	Contact: Contact@mosacimk.com
 	Version 1.0.0.0
 
 	How To use the base64 code
@@ -2470,33 +2463,29 @@ function Convert-FileToBase64 {
     Write-Host "Succefully converted to base64"
 }
 
-function Convert-FileToDLL {
+function Convert-FileToEncyptedFile {
 <#
     .SYNOPSIS
-    Convert a ps1 file to a dll
-
+	Convert a ps1 file to a encrypted file
     .DESCRIPTION
-    Convert a PowerShell script file to a encryped dll file using 256bit AES encryption
-
+    Convert a PowerShell script file to a encryped file using 256bit AES encryption
     .PARAMETER InFile
     Path to the PowerShell script
-
     .PARAMETER OutFile
-	Path to the dll file
-
+	Path to wheer the encrypted file is to be placed file
 	.PARAMETER KeyToFile
 	Path to where the key is to be written
-
 	.PARAMETER KeyToHost
 	Writes the key to the host window
-
+	.PARAMETER KeyFile
+	Path to a pre created file containing the key you wish to use (Can be created with New-AESKeyFile)
     .EXAMPLE
-    PS2DLL.ps1 -InFile C:\Read-File.ps1 -OutFile C:\Read-File.dll -KeyToFle
-
+	PS2DLL.ps1 -InFile C:\Read-File.ps1 -OutFile C:\Read-File.dll -KeyToFle
+	This will enctypt Read-File.ps1 to read-file.dll and print the key
     .NOTES
-    Created By: Kris Gross
+    Created By: MosaicMK Software
     Contact: Contact@mosaicMK.com
-    Version 1.0.1.2
+    Version 1.1.1.2
 
     To Use the dll in a script
     $Path = <Path to DLL>
@@ -2507,70 +2496,74 @@ function Convert-FileToDLL {
     Invoke-Expression $script
 
     .LINK
-    http://www.mosaicMK.com/
+    https://www.MosaicMK.com/
 #>
 	PARAM
 	(
 		[Parameter(Mandatory=$true)]
 		[string]$InFile,
-		[Parameter(Mandatory=$true,HelpMessage="Must be a DLL file")]
-		[ValidateScript({$_ -like "*.dll"})]
+		[Parameter(Mandatory=$true)]
 		[string]$OutFile,
 		[switch]$KeyToFile,
-		[switch]$KeyToHost
+		[switch]$KeyToHost,
+		[string]$KeyFile
 	)
-
-	[byte[]]$Key = (0..100) + (100..200)| Get-Random -Count 32
-	$script = Get-Content $InFile | Out-String
-	$secure = ConvertTo-SecureString $script -asPlainText -force
-	$export = $secure | ConvertFrom-SecureString -Key $key
-	Set-Content $OutFile $export
-	IF ($KeyToFile){
-		$KeyFile =  $OutFile -replace ".dll",".txt"
-		Set-Content $KeyFile $Key
+	try {
+		IF (!($KeyFile)){[byte[]]$Key = (0..100) + (100..200)| Get-Random -Count 32 -ErrorAction Stop} else {[byte[]]$Key = Get-Content "$KeyFile" -ErrorAction Stop}
+		$script = Get-Content $InFile -ErrorAction Stop | Out-String
+		$secure = ConvertTo-SecureString $script -asPlainText -force -ErrorAction Stop
+		$export = $secure | ConvertFrom-SecureString -Key $key -ErrorAction Stop
+		Set-Content $OutFile $export -ErrorAction Stop
+		IF (!($KeyFile)){
+			IF ($KeyToFile){
+				$KeyFile =  $OutFile -replace ".dll",".txt"
+				Set-Content $KeyFile $Key
+			}
+			If ($KeyToHost -or !($KeyToFile)){
+				[string]$outKey = $key -join ","
+				Write-Host "Your Key: $outkey"
+			}
+		}
 	}
-	Write-Host "Script $InFile has been encrypted as $OutFile"
-	If ($KeyToHost -or !($KeyToFile)){
-		[string]$outKey = $key -join ","
-		Write-Host "Your Key: $outkey"
-	}
+	catch {Write-Error "$_"}
 }
 
+function New-AESKeyFile {
+	param ([string]$KeyFile)
+	try {
+		[byte[]]$KeyGen = (0..100) + (100..200) | Get-Random -Count 32 -ErrorAction Stop
+		IF (!($KeyFile)){$KeyFile = "$PSScriptRoot\KeyFile.txt"}
+		Set-Content -Value $KeyGen -Path "$KeyFile" -ErrorAction Stop
+	}
+	catch {Write-Error "$_"}
+}
 
 function Convert-StringToSecureString {
 	<#
     .SYNOPSIS
     Convert string to a secure string
-
     .DESCRIPTION
     Convert a strign to a 256 bit ecrypet string to be used in a script
-
     .PARAMETER InString
     The string to be encrypted
-
 	.PARAMETER SecureStringToFile
 	Writes the secure stringto a file
-
 	.PARAMETER SecureStringToHost
 	Writes the string to the host window
-
 	.PARAMETER KeyToFile
 	Writes the decryption key to a file
-
 	.PARAMETER KeyToHost
 	Writes the decryption key to the host window
-
 
 	.EXAMPLE
 	Convert-StringToSecureString -InString "John Smith lives at 8888 Park Drive" -SecureStringToHost -KeyToHost
 	Encrypts the string "John Smith lives at 8888 Park Drive" and Write they encrypted string to the host and the
 	key used to encrypt the string.
 
-
     .NOTES
     Created By: Kris Gross
     Contact: Contact@mosaicMK.com
-    Version 1.0.0.0
+    Version 1.1.0.0
 
     .LINK
     http://www.mosaicMK.com/
@@ -2581,10 +2574,11 @@ function Convert-StringToSecureString {
 		[string]$SecureStringToFile,
 		[switch]$SecureStringToHost,
 		[string]$KeyToFile,
-		[switch]$KeyToHost
+		[switch]$KeyToHost,
+		[string]$KeyFile
 	)
 
-	[byte[]]$Key = (0..100) + (100..200)| Get-Random -Count 32
+	IF (!($KeyFile)){[byte[]]$Key = (0..100) + (100..200)| Get-Random -Count 32 -ErrorAction Stop} else {[byte[]]$Key = Get-Content "$KeyFile" -ErrorAction Stop}
 	$secure = ConvertTo-SecureString $InString -asPlainText -force
 	$export = $secure | ConvertFrom-SecureString -Key $key
 	If ($SecureStringToFile){Set-Content $SecureStringToFile $export}

@@ -4,7 +4,7 @@ PowerShell Module to help package a PowerShell script or script resorces
 ### Installing
 Download the current branch and import the ScriptPackage.psd1 file into PowerShell
 
-Once imported you will have 3 new commands that you can use to package your script files 
+Once imported you will have 5 new commands that you can use to package your script files 
 
 ### Convert-PS2XE
 
@@ -37,3 +37,7 @@ You can use the fallowing to decypt the file and run it from another PowerShell 
 ### Convert-StringToSecureString
 
 This command will encrypt a string to a secure string providing you with a key and the options to export the string and key to a file
+
+### New-AESKeyFile
+
+This command will create a file that contains a AES key that can be used with Convert-FileToDll and Convert-StringToSecureString this way you can specify a key instead of using a randomly generated one everytime.

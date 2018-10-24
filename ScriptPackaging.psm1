@@ -2435,14 +2435,12 @@ function Convert-FileToBase64 {
 	.PARAMETER OutFile
 	path to the output file (this should be a txt file)
 	.NOTES
-	Created By: MosaicMK Software
 	Contact: Contact@mosacimk.com
 	Version 1.0.0.0
 
 	How To use the base64 code
 	$BaseCode = @" <CodeFromTextFile> "@  or $BaseCode = Get-Content <PathToTextFile>
 	Set-Content -Path "<NameOfFile>" -Value $BaseCode -Encoding Byte
-
 	.LINK
 	http://MosaicMK.com
 #>
@@ -2454,24 +2452,24 @@ function Convert-FileToBase64 {
     )
     try {
         $encodedImage = [convert]::ToBase64String((get-content $inFile -encoding byte))
-        $encodedImage -replace ".{80}" , "$&`r`n" | set-content $outFile
+		$encodedImage -replace ".{80}" , "$&`r`n" | set-content $outFile
+		Write-Host "Succefully converted to base64"
     }
     catch {
         Write-Error "$_"
         exit 1
     }
-    Write-Host "Succefully converted to base64"
 }
 
-function Convert-FileToEncyptedFile {
+function Convert-FileToDll {
 <#
     .SYNOPSIS
 	Convert a ps1 file to a encrypted file
-    .DESCRIPTION
-    Convert a PowerShell script file to a encryped file using 256bit AES encryption
-    .PARAMETER InFile
-    Path to the PowerShell script
-    .PARAMETER OutFile
+	.DESCRIPTION
+	Convert a PowerShell script file to a encryped file using 256bit AES encryption
+	.PARAMETER InFile
+	Path to the PowerShell script
+	.PARAMETER OutFile
 	Path to wheer the encrypted file is to be placed file
 	.PARAMETER KeyToFile
 	Path to where the key is to be written
@@ -2479,30 +2477,30 @@ function Convert-FileToEncyptedFile {
 	Writes the key to the host window
 	.PARAMETER KeyFile
 	Path to a pre created file containing the key you wish to use (Can be created with New-AESKeyFile)
-    .EXAMPLE
-	PS2DLL.ps1 -InFile C:\Read-File.ps1 -OutFile C:\Read-File.dll -KeyToFle
+	.EXAMPLE
+	PS2DLL.ps1 -InFile C:\Read-File.ps1 -OutFile C:\Read-File.dll -KeyToFile
 	This will enctypt Read-File.ps1 to read-file.dll and print the key
-    .NOTES
-    Created By: MosaicMK Software
-    Contact: Contact@mosaicMK.com
-    Version 1.1.1.2
+	.NOTES
+	Contact: Contact@mosaicMK.com
+	Version 1.1.1.2
 
-    To Use the dll in a script
-    $Path = <Path to DLL>
-    trap { "Decryption failed"; break }
-    $secure = Get-Content $path | ConvertTo-SecureString -Key (<Content of key file seperated by a ",">)
-    $BSTR = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($Secure)
-    $script = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto($BSTR)
-    Invoke-Expression $script
+	To Use the dll in a script
+	$Path = <Path to DLL>
+	trap { "Decryption failed"; break }
+	$secure = Get-Content $path | ConvertTo-SecureString -Key (<Content of key file seperated by a ",">)
+	$BSTR = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($Secure)
+	$script = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto($BSTR)
+	Invoke-Expression $script
 
-    .LINK
-    https://www.MosaicMK.com/
+	.LINK
+	https://www.MosaicMK.com/
 #>
 	PARAM
 	(
 		[Parameter(Mandatory=$true)]
 		[string]$InFile,
-		[Parameter(Mandatory=$true)]
+		[Parameter(Mandatory=$true,HelpMessage="Must be a DLL file")]
+        [ValidateScript({$_ -like "*.dll"})]
 		[string]$OutFile,
 		[switch]$KeyToFile,
 		[switch]$KeyToHost,
@@ -2529,10 +2527,28 @@ function Convert-FileToEncyptedFile {
 }
 
 function New-AESKeyFile {
-	param ([string]$KeyFile)
+	<#
+    .SYNOPSIS
+	Create a file containing a 256 bit key
+	.DESCRIPTION
+	Creates a file that can be used with Convert-FileToDll
+	.PARAMETER KeyFile
+	Path to where the Key file is to be created
+	.EXAMPLE
+	New-AESKeyFile -KeyFile C:\File.txt
+	Creates the file at C:\File.txt
+	.NOTES
+	Contact: Contact@mosaicMK.com
+	Version 1.0.0.0
+	.LINK
+	https://www.MosaicMK.com/
+#>
+	param (
+		[Parameter(Mandatory=$true)]
+		[string]$KeyFile
+		)
 	try {
 		[byte[]]$KeyGen = (0..100) + (100..200) | Get-Random -Count 32 -ErrorAction Stop
-		IF (!($KeyFile)){$KeyFile = "$PSScriptRoot\KeyFile.txt"}
 		Set-Content -Value $KeyGen -Path "$KeyFile" -ErrorAction Stop
 	}
 	catch {Write-Error "$_"}
@@ -2554,14 +2570,12 @@ function Convert-StringToSecureString {
 	Writes the decryption key to a file
 	.PARAMETER KeyToHost
 	Writes the decryption key to the host window
-
 	.EXAMPLE
 	Convert-StringToSecureString -InString "John Smith lives at 8888 Park Drive" -SecureStringToHost -KeyToHost
 	Encrypts the string "John Smith lives at 8888 Park Drive" and Write they encrypted string to the host and the
 	key used to encrypt the string.
 
     .NOTES
-    Created By: Kris Gross
     Contact: Contact@mosaicMK.com
     Version 1.1.0.0
 

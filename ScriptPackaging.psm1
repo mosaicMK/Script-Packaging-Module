@@ -2500,7 +2500,7 @@ function Convert-FileToDll {
 		[Parameter(Mandatory=$true)]
 		[string]$InFile,
 		[Parameter(Mandatory=$true,HelpMessage="Must be a DLL file")]
-        [ValidateScript({$_ -like "*.dll"})]
+		[ValidateScript({$_ -like "*.dll"})]
 		[string]$OutFile,
 		[switch]$KeyToFile,
 		[switch]$KeyToHost,

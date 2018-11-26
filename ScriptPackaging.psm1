@@ -2542,7 +2542,7 @@ function New-AESKeyFile {
 	Version 1.0.0.0
 	.LINK
 	https://www.MosaicMK.com/
-#>
+	#>
 	param (
 		[Parameter(Mandatory=$true)]
 		[string]$KeyFile
@@ -2599,4 +2599,31 @@ function Convert-StringToSecureString {
 	If ($SecureStringToHost){Write-Host "SecureString: $export"}
 	IF ($KeyToFile){Set-Content $KeyToFile $Key}
 	IF ($KeyToHost){Write-Host "Key: $Key"}
+}
+
+function Read-AESKeyFile {
+	<#
+    .SYNOPSIS
+	Read a AES key
+	.DESCRIPTION
+	Reads a AES keys in a format that can be used in the decrypt function
+	.PARAMETER KeyFile
+	Path to where the Key file is
+	.NOTES
+	Contact: Contact@mosaicMK.com
+	Version 1.0.0.0
+	.LINK
+	https://www.MosaicMK.com/
+	#>
+	param (
+			[Parameter(Mandatory=$true)]
+			[string]$KeyFile
+		)
+	try {
+		$Rkey = Get-Content "$KeyFile" -ErrorAction Stop
+		$RKey = $Rkey -join ","
+		$KeyObject = New-Object -TypeName psobject 
+		$KeyObject | Add-Member -MemberType NoteProperty -Name Key -Value $Rkey
+		$KeyObject
+	} Catch {Write-Error "$_"}
 }

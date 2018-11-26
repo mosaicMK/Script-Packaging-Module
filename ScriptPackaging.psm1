@@ -2602,19 +2602,19 @@ function Convert-StringToSecureString {
 }
 
 function Read-AESKeyFile {
-	<#
-    .SYNOPSIS
-	Read a AES key
-	.DESCRIPTION
-	Reads a AES keys in a format that can be used in the decrypt function
-	.PARAMETER KeyFile
-	Path to where the Key file is
-	.NOTES
-	Contact: Contact@mosaicMK.com
-	Version 1.0.0.0
-	.LINK
-	https://www.MosaicMK.com/
-	#>
+<#
+.SYNOPSIS
+Read a AES key
+.DESCRIPTION
+Prints the AES key from a file to the host window allow the key to be pasted into a script or command
+.PARAMETER KeyFile
+Path to where the Key file is
+.NOTES
+Contact: Contact@mosaicMK.com
+Version 1.0.0.0
+.LINK
+https://www.MosaicMK.com/
+#>
 	param (
 			[Parameter(Mandatory=$true)]
 			[string]$KeyFile

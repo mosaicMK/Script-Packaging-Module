@@ -21,7 +21,7 @@
     CompanyName = 'MosaicMK Software'
 
     # The version of this module.
-    ModuleVersion = '1.1.2.1'
+    ModuleVersion = '1.1.3.1'
 
     # A description of this module.
     Description = 'Tools used to package PowerShell script or script resorces'

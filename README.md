@@ -41,3 +41,7 @@ This command will encrypt a string to a secure string providing you with a key a
 ### New-AESKeyFile
 
 This command will create a file that contains a AES key that can be used with Convert-FileToDll and Convert-StringToSecureString this way you can specify a key instead of using a randomly generated one everytime.
+
+### Read-AESKey
+
+Prints the AES key from a file to the host window allow the key to be pasted into a script or command

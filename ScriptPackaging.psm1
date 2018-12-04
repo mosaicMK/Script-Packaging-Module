@@ -2,18 +2,15 @@ function Convert-PS2EXE {
 <#
 	.SYNOPSIS
 	Create a exe file from a PowerShell script file
-
 	.DESCRIPTION
 	A generated executables has the following reserved parameters:
 
-	-debug Forces the executable to be debugged. It calls "System.Diagnostics.Debugger.Break()".
-                    The script will not be executed.
-	-wait           At the end of the script execution it writes "Hit any key to exit..." and waits for a key to be pressed.
-	-end            All following options will be passed to the script inside the executable.
-					All preceding options are used by the executable itself and will not be passed to the script
-
-    The Extract parameter has been removed to help protect the source code, This doesn't make the source code secure but dose make it
-    Harder to be retrieved
+	-debug Forces the executable to be debugged. It calls "System.Diagnostics.Debugger.Break()".The script will not be executed.
+	-wait At the end of the script execution it writes "Hit any key to exit..." and waits for a key to be pressed.
+	-end All following options will be passed to the script inside the executable. All preceding options are used by the executable itself and will not be passed to the script
+	
+	The Extract parameter has been removed to help protect the source code, This doesn't make the source code secure but dose make it
+	harder to be retrieved
 
 	Script variables:
 	Since PS2EXE converts a script to an executable, script related variables are not available anymore. Especially the variable $PSScriptRoot is empty.
@@ -21,11 +18,7 @@ function Convert-PS2EXE {
 
 	You can retrieve the script/executable path independant of compiled/not compiled with the following code (thanks to JacquesFS):
 
-	if ($MyInvocation.MyCommand.CommandType -eq "ExternalScript")
-	{ $ScriptPath = Split-Path -Parent -Path $MyInvocation.MyCommand.Definition }
-	else
-	{ $ScriptPath = Split-Path -Parent -Path ([Environment]::GetCommandLineArgs()[0]) }
-
+	if ($MyInvocation.MyCommand.CommandType -eq "ExternalScript"){ $ScriptPath = Split-Path -Parent -Path $MyInvocation.MyCommand.Definition }else{ $ScriptPath = Split-Path -Parent -Path ([Environment]::GetCommandLineArgs()[0]) }
 	.PARAMETER inputFile
 	Powershell script that you want to convert to EXE
 	.PARAMETER outputFile
@@ -58,7 +51,6 @@ function Convert-PS2EXE {
 	When your command generates 10 lines of output and you use GUI output, 10 message boxes will appear each awaitung for an OK.
 	To prevent this pipe your command to the comandlet Out-String. This will convert the output to a string array with 10 lines,
 	all output will be shown in one message box (for example: dir C:\ | Out-String).
-
 	.PARAMETER credentialGUI
 	use GUI for prompting credentials in console mode
 	.PARAMETER iconFile
@@ -83,17 +75,20 @@ function Convert-PS2EXE {
 	if UAC is enabled, compiled EXE run only in elevated context (UAC dialog appears if required)
 	.PARAMETER virtualize
 	application virtualization is activated (forcing x86 runtime)
-
+	.Example 
+	Convert-PS2EXE -inputFile c:\script.ps1 -outputFile C:\script.exe -noConsole -noConfigfile -iconFile c:\file.ico -title "script"
+	Creates a exe file named script.exe that wont show a powershell console using the file.ico file
 	.Notes
+	Version 1.1.4.2
 	PS2EXE-GUI v0.5.0.12
 	Written by: Ingo Karstein (http://blog.karstein-consulting.com)
 	Reworked and GUI support by Markus Scholtes
+	Module intagration and Help syntax created by MosaicMK Software LLC (https://www.mosaicmk.com) or (https://blog.mosaicmk.com)
 	Origanal script can be found https://gallery.technet.microsoft.com/scriptcenter/PS2EXE-GUI-Convert-e7cb69d5
 	Help syntax and Module creation by Kris Gross (http://www.mosaicMK.com)
 
 	This script is released under Microsoft Public Licence
 	that can be downloaded here: http://www.microsoft.com/opensource/licenses.mspx#Ms-PL
-
 	.link
 	http://www.mosaicMK.com
 #>
@@ -128,135 +123,30 @@ Param(
 	[switch]$noConfigfile
 )
 
-if (!$nested){Write-Host "PS2EXE-GUI v0.5.0.12 by Ingo Karstein, reworked and GUI support by Markus Scholtes"}else{Write-Host "PowerShell 2.0 environment started..."}
-Write-Host ""
-
-if ($runtime20 -and $runtime40)
-{
-	Write-Error "You cannot use switches -runtime20 and -runtime40 at the same time!"
-	exit -1
-}
-
-if ($Sta -and $Mta)
-{
-	Write-Error "You cannot use switches -Sta and -Mta at the same time!"
-	exit -1
-}
-
+if ($runtime20 -and $runtime40){Throw "You cannot use switches -runtime20 and -runtime40 at the same time!"}
+if ($Sta -and $Mta){Throw "You cannot use switches -Sta and -Mta at the same time!"}
 if ([string]::IsNullOrEmpty($inputFile) -or [string]::IsNullOrEmpty($outputFile)) {exit -1}
 
 $psversion = 0
-if ($PSVersionTable.PSVersion.Major -ge 4)
-{
-	$psversion = 4
-	Write-Host "You are using PowerShell 4.0 or above."
-}
-
-if ($PSVersionTable.PSVersion.Major -eq 3)
-{
-	$psversion = 3
-	Write-Host "You are using PowerShell 3.0."
-}
-
-if ($PSVersionTable.PSVersion.Major -eq 2)
-{
-	$psversion = 2
-	Write-Host "You are using PowerShell 2.0."
-}
-
-if ($psversion -eq 0)
-{
-	Write-Error "The powershell version is unknown!"
-	exit -1
-}
-
-# retrieve absolute paths independent whether path is given relative oder absolute
+if ($PSVersionTable.PSVersion.Major -ge 4){$psversion = 4}
+if ($PSVersionTable.PSVersion.Major -eq 3){$psversion = 3}
+if ($PSVersionTable.PSVersion.Major -eq 2){$psversion = 2}
+if ($psversion -eq 0){Throw "The powershell version is unknown!"}
 $inputFile = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($inputFile)
 $outputFile = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($outputFile)
+if (!(Test-Path $inputFile -PathType Leaf)){Throw "Input file $($inputfile) not found!"}
+if ($inputFile -eq $outputFile){Throw "Input file is identical to output file!"}
 
-if (!(Test-Path $inputFile -PathType Leaf))
-{
-	Write-Error "Input file $($inputfile) not found!"
-	exit -1
-}
-
-if ($inputFile -eq $outputFile)
-{
-	Write-Error "Input file is identical to output file!"
-	exit -1
-}
-
-if (!([string]::IsNullOrEmpty($iconFile)))
-{
+if (!([string]::IsNullOrEmpty($iconFile))){
 	# retrieve absolute path independent whether path is given relative oder absolute
 	$iconFile = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($iconFile)
-
-	if (!(Test-Path $iconFile -PathType Leaf))
-	{
-		Write-Error "Icon file $($iconFile) not found!"
-		exit -1
-	}
+	if (!(Test-Path $iconFile -PathType Leaf)){Throw "Icon file $($iconFile) not found!"}
 }
 
-if ($requireAdmin -And $virtualize)
-{
-	Write-Error "-requireAdmin cannot be combined with -virtualize"
-	exit -1
-}
-
+if ($requireAdmin -And $virtualize){Throw "-requireAdmin cannot be combined with -virtualize"}
 if (!$runtime20 -and !$runtime40){if ($psversion -eq 4){$runtime40 = $TRUE}elseif($psversion -eq 3){$runtime40 = $TRUE}else{$runtime20 = $TRUE}}
 
-if ($psversion -ge 3 -and $runtime20)
-{
-	Write-Host "To create an EXE file for PowerShell 2.0 on PowerShell 3.0 or above this script now launches PowerShell 2.0..."
-	Write-Host ""
-
-	$arguments = "-inputFile '$($inputFile)' -outputFile '$($outputFile)' -nested "
-
-	if ($VerboseEXE) { $arguments += "-verbose "}
-	if ($debugEXE) { $arguments += "-debug "}
-	if ($runtime20) { $arguments += "-runtime20 "}
-	if ($x86) { $arguments += "-x86 "}
-	if ($x64) { $arguments += "-x64 "}
-	if ($lcid) { $arguments += "-lcid $lcid "}
-	if ($Sta) { $arguments += "-Sta "}
-	if ($Mta) { $arguments += "-Mta "}
-	if ($noConsole) { $arguments += "-noConsole "}
-	if (!([string]::IsNullOrEmpty($iconFile))) { $arguments += "-iconFile '$($iconFile)' "}
-	if (!([string]::IsNullOrEmpty($title))) { $arguments += "-title '$($title)' "}
-	if (!([string]::IsNullOrEmpty($description))) { $arguments += "-description '$($description)' "}
-	if (!([string]::IsNullOrEmpty($company))) { $arguments += "-company '$($company)' "}
-	if (!([string]::IsNullOrEmpty($product))) { $arguments += "-product '$($product)' "}
-	if (!([string]::IsNullOrEmpty($copyright))) { $arguments += "-copyright '$($copyright)' "}
-	if (!([string]::IsNullOrEmpty($trademark))) { $arguments += "-trademark '$($trademark)' "}
-	if (!([string]::IsNullOrEmpty($version))) { $arguments += "-version '$($version)' "}
-	if ($requireAdmin) { $arguments += "-requireAdmin "}
-	if ($virtualize) { $arguments += "-virtualize "}
-
-	if ($MyInvocation.MyCommand.CommandType -eq "ExternalScript")
-	{	# ps2exe.ps1 is running (script)
-		$jobScript = @"
-."$($PSHOME)\powershell.exe" -version 2.0 -command "&'$($MyInvocation.MyCommand.Path)' $($arguments)"
-"@
-	}
-	else
-	{ # ps2exe.exe is running (compiled script)
-		Write-Error "The parameter -runtime20 is not supported for compiled ps2exe.ps1 scripts."
-		Write-Error "Compile ps2exe.ps1 with parameter -runtime20 and call the generated executable (without -runtime20)."
-		exit -1
-	}
-
-	Invoke-Expression $jobScript
-
-	exit 0
-}
-
-if ($psversion -lt 3 -and $runtime40)
-{
-	Write-Error "You need to run ps2exe in an Powershell 3.0 or higher environment to use parameter -runtime40"
-	Write-Host ""
-	exit -1
-}
+if ($psversion -lt 3 -and $runtime40){Throw "You need to run ps2exe in an Powershell 3.0 or higher environment to use parameter -runtime40"}
 
 # Set default apartment mode for powershell version if not set by parameter
 if ($psversion -lt 3 -and !$Mta -and !$Sta){$Mta = $TRUE}
@@ -272,16 +162,7 @@ $trademark = $trademark -replace "\\", "\\"
 $description = $description -replace "\\", "\\"
 $company = $company -replace "\\", "\\"
 
-if (![string]::IsNullOrEmpty($version))
-{ # check for correct version number information
-	if ($version -notmatch "(^\d+\.\d+\.\d+\.\d+$)|(^\d+\.\d+\.\d+$)|(^\d+\.\d+$)|(^\d+$)")
-	{
-		Write-Error "Version number has to be supplied in the form n.n.n.n, n.n.n, n.n or n (with n as number)!"
-		exit -1
-	}
-}
-
-Write-Host ""
+if (![string]::IsNullOrEmpty($version)){ if ($version -notmatch "(^\d+\.\d+\.\d+\.\d+$)|(^\d+\.\d+\.\d+$)|(^\d+\.\d+$)|(^\d+$)"){Throw "Version number has to be supplied in the form n.n.n.n, n.n.n, n.n or n (with n as number)!"}}
 
 $type = ('System.Collections.Generic.Dictionary`2') -as "Type"
 $type = $type.MakeGenericType( @( ("System.String" -as "Type"), ("system.string" -as "Type") ) )
@@ -293,8 +174,7 @@ if ($psversion -eq 3 -or $psversion -eq 4){
 }
 else{
 	if (Test-Path ("$ENV:WINDIR\Microsoft.NET\Framework\v3.5\csc.exe"))
-	{ $o.Add("CompilerVersion", "v3.5") }
-	else{
+	{ $o.Add("CompilerVersion", "v3.5")}else{
 		Write-Warning "No .Net 3.5 compiler found, using .Net 2.0 compiler."
 		Write-Warning "Therefore some methods are not available!"
 		$compiler20 = $TRUE
@@ -316,11 +196,9 @@ if ($noConsole){
 	$n = New-Object System.Reflection.AssemblyName("System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")
 	if ($runtime40){$n = New-Object System.Reflection.AssemblyName("System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")}
 	[System.AppDomain]::CurrentDomain.Load($n) | Out-Null
-
 	$n = New-Object System.Reflection.AssemblyName("System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")
 	if ($runtime40){$n = New-Object System.Reflection.AssemblyName("System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")}
 	[System.AppDomain]::CurrentDomain.Load($n) | Out-Null
-
 	$referenceAssembies += ([System.AppDomain]::CurrentDomain.GetAssemblies() | ? { $_.ManifestModule.Name -ieq "System.Windows.Forms.dll" } | Select -First 1).Location
 	$referenceAssembies += ([System.AppDomain]::CurrentDomain.GetAssemblies() | ? { $_.ManifestModule.Name -ieq "System.Drawing.dll" } | Select -First 1).Location
 }
@@ -337,8 +215,7 @@ $iconFileParam = ""
 if (!([string]::IsNullOrEmpty($iconFile))){$iconFileParam = "`"/win32icon:$($iconFile)`""}
 
 $reqAdmParam = ""
-if ($requireAdmin)
-{
+if ($requireAdmin){
 	$win32manifest = "<?xml version=""1.0"" encoding=""UTF-8"" standalone=""yes""?>`r`n<assembly xmlns=""urn:schemas-microsoft-com:asm.v1"" manifestVersion=""1.0"">`r`n<trustInfo xmlns=""urn:schemas-microsoft-com:asm.v2"">`r`n<security>`r`n<requestedPrivileges xmlns=""urn:schemas-microsoft-com:asm.v3"">`r`n<requestedExecutionLevel level=""requireAdministrator"" uiAccess=""false""/>`r`n</requestedPrivileges>`r`n</security>`r`n</trustInfo>`r`n</assembly>"
 	$win32manifest | Set-Content ($outputFile+".win32manifest") -Encoding UTF8
 	$reqAdmParam = "`"/win32manifest:$($outputFile+".win32manifest")`""
@@ -354,14 +231,8 @@ $cp.IncludeDebugInformation = $debugEXE
 
 if ($debugEXE){$cp.TempFiles.KeepFiles = $TRUE}
 
-Write-Host "Reading input file " -NoNewline
-Write-Host $inputFile
-Write-Host ""
 $content = Get-Content -LiteralPath ($inputFile) -Encoding UTF8 -ErrorAction SilentlyContinue
-if ($content -eq $null){
-	Write-Error "No data found. May be read error or file protected."
-	exit -2
-}
+if ($content -eq $null){Throw "No data found. May be read error or file protected."}
 $scriptInp = [string]::Join("`r`n", $content)
 $script = [System.Convert]::ToBase64String(([System.Text.Encoding]::UTF8.GetBytes($scriptInp)))
 
@@ -2361,67 +2232,29 @@ $(if (!$noConsole) {@"
 }
 "@
 #endregion
-
 $configFileForEXE2 = "<?xml version=""1.0"" encoding=""utf-8"" ?>`r`n<configuration><startup><supportedRuntime version=""v2.0.50727""/></startup></configuration>"
 $configFileForEXE3 = "<?xml version=""1.0"" encoding=""utf-8"" ?>`r`n<configuration><startup><supportedRuntime version=""v4.0"" sku="".NETFramework,Version=v4.0"" /></startup></configuration>"
-
-Write-Host "Compiling file... " -NoNewline
 $cr = $cop.CompileAssemblyFromSource($cp, $programFrame)
-if ($cr.Errors.Count -gt 0)
-{
-	Write-Host ""
-	Write-Host ""
-	if (Test-Path $outputFile)
-	{
-		Remove-Item $outputFile -Verbose:$FALSE
-	}
-	Write-Host -ForegroundColor red "Could not create the PowerShell .exe file because of compilation errors. Use -verbose parameter to see details."
-	$cr.Errors | % { Write-Verbose $_ -Verbose:$VerboseEXE}
-}
-else
-{
-	Write-Host ""
-	Write-Host ""
-	if (Test-Path $outputFile)
-	{
-		Write-Host "Output file " -NoNewline
-		Write-Host $outputFile -NoNewline
-		Write-Host " written"
-
-		if ($debugEXE)
-		{
-			$cr.TempFiles | ? { $_ -ilike "*.cs" } | select -first 1 | % {
+if ($cr.Errors.Count -gt 0){
+	if (Test-Path $outputFile){Remove-Item $outputFile -Verbose:$FALSE}
+	Write-Error "Could not create the PowerShell .exe file because of compilation errors. Use -verbose parameter to see details."
+	$cr.Errors | ForEach-Object { Write-Verbose $_ -Verbose:$VerboseEXE}
+}else{
+	if (Test-Path $outputFile){
+		if ($debugEXE){
+			$cr.TempFiles | Where-Object { $_ -ilike "*.cs" } | Select-Object -first 1 | ForEach-Object {
 				$dstSrc = ([System.IO.Path]::Combine([System.IO.Path]::GetDirectoryName($outputFile), [System.IO.Path]::GetFileNameWithoutExtension($outputFile)+".cs"))
-				Write-Host "Source file name for debug copied: $($dstSrc)"
 				Copy-Item -Path $_ -Destination $dstSrc -Force
 			}
 			$cr.TempFiles | Remove-Item -Verbose:$FALSE -Force -ErrorAction SilentlyContinue
 		}
-		if (!$noConfigfile)
-		{
-			if ($runtime20)
-			{
-				$configFileForEXE2 | Set-Content ($outputFile+".config") -Encoding UTF8
-				Write-Host "Config file for EXE created."
-			}
-			if ($runtime40)
-			{
-				$configFileForEXE3 | Set-Content ($outputFile+".config") -Encoding UTF8
-				Write-Host "Config file for EXE created."
-			}
+		if (!$noConfigfile){
+			if ($runtime20){$configFileForEXE2 | Set-Content ($outputFile+".config") -Encoding UTF8}
+			if ($runtime40){$configFileForEXE3 | Set-Content ($outputFile+".config") -Encoding UTF8}
 		}
-	}
-	else
-	{
-		Write-Host "Output file " -NoNewline -ForegroundColor Red
-		Write-Host $outputFile -ForegroundColor Red -NoNewline
-		Write-Host " not written" -ForegroundColor Red
-	}
+	} else {Write-Error "Output file $outputFile not written"}
 }
-
-if ($requireAdmin)
-{ if (Test-Path $($outputFile+".win32manifest")){Remove-Item $($outputFile+".win32manifest") -Verbose:$FALSE}}
-
+if ($requireAdmin){if(Test-Path $($outputFile+".win32manifest")){Remove-Item $($outputFile+".win32manifest") -Verbose:$FALSE}}
 }
 
 function Convert-FileToBase64 {
@@ -2436,10 +2269,10 @@ function Convert-FileToBase64 {
 	path to the output file (this should be a txt file)
 	.NOTES
 	Contact: Contact@mosacimk.com
-	Version 1.0.0.0
+	Version 1.0.0.1
 
 	How To use the base64 code
-	$BaseCode = @" <CodeFromTextFile> "@  or $BaseCode = Get-Content <PathToTextFile>
+	$BaseCode = @" <CodeFromTextFile> "@ 
 	Set-Content -Path "<NameOfFile>" -Value $BaseCode -Encoding Byte
 	.LINK
 	http://MosaicMK.com
@@ -2453,12 +2286,8 @@ function Convert-FileToBase64 {
     try {
         $encodedImage = [convert]::ToBase64String((get-content $inFile -encoding byte))
 		$encodedImage -replace ".{80}" , "$&`r`n" | set-content $outFile
-		Write-Host "Succefully converted to base64"
     }
-    catch {
-        Write-Error "$_"
-        exit 1
-    }
+    catch {Write-Error "$_"}
 }
 
 function Convert-FileToDll {
@@ -2574,11 +2403,9 @@ function Convert-StringToSecureString {
 	Convert-StringToSecureString -InString "John Smith lives at 8888 Park Drive" -SecureStringToHost -KeyToHost
 	Encrypts the string "John Smith lives at 8888 Park Drive" and Write they encrypted string to the host and the
 	key used to encrypt the string.
-
     .NOTES
     Contact: Contact@mosaicMK.com
-    Version 1.1.0.0
-
+    Version 1.1.0.1
     .LINK
     http://www.mosaicMK.com/
 #>
@@ -2602,28 +2429,3 @@ function Convert-StringToSecureString {
 }
 
 function Read-AESKeyFile {
-<#
-.SYNOPSIS
-Read a AES key
-.DESCRIPTION
-Prints the AES key from a file to the host window allow the key to be pasted into a script or command
-.PARAMETER KeyFile
-Path to where the Key file is
-.NOTES
-Contact: Contact@mosaicMK.com
-Version 1.0.0.0
-.LINK
-https://www.MosaicMK.com/
-#>
-	param (
-			[Parameter(Mandatory=$true)]
-			[string]$KeyFile
-		)
-	try {
-		$Rkey = Get-Content "$KeyFile" -ErrorAction Stop
-		$RKey = $Rkey -join ","
-		$KeyObject = New-Object -TypeName psobject 
-		$KeyObject | Add-Member -MemberType NoteProperty -Name Key -Value $Rkey
-		$KeyObject
-	} Catch {Write-Error "$_"}
-}

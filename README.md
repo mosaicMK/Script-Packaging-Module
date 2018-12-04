@@ -17,7 +17,7 @@ This command will convert a file to base64 code and print the code to a txt file
 
 The below will convert the code back to the original file
 ```
-  $BaseCode = @" <CodeFromTextFile> "@  or $BaseCode = Get-Content <PathToTextFile>
+  $BaseCode = @" <CodeFromTextFile> "@
   Set-Content -Path "<NameOforiginalFile>" -Value $BaseCode -Encoding Byte
 ```
 

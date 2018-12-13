@@ -2429,3 +2429,28 @@ function Convert-StringToSecureString {
 }
 
 function Read-AESKeyFile {
+<#
+.SYNOPSIS
+Read a AES key
+.DESCRIPTION
+Prints the AES key from a file to the host window allow the key to be pasted into a script or command
+.PARAMETER KeyFile
+Path to where the Key file is
+.NOTES
+Contact: Contact@mosaicMK.com
+Version 1.0.0.0
+.LINK
+https://www.MosaicMK.com/
+#>
+	param (
+			[Parameter(Mandatory=$true)]
+			[string]$KeyFile
+		)
+	try {
+		$Rkey = Get-Content "$KeyFile" -ErrorAction Stop
+		$RKey = $Rkey -join ","
+		$KeyObject = New-Object -TypeName psobject 
+		$KeyObject | Add-Member -MemberType NoteProperty -Name Key -Value $Rkey
+		$KeyObject
+	} Catch {Write-Error "$_"}
+}

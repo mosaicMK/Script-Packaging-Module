@@ -8,7 +8,7 @@ function Convert-PS2EXE {
 	-debug Forces the executable to be debugged. It calls "System.Diagnostics.Debugger.Break()".The script will not be executed.
 	-wait At the end of the script execution it writes "Hit any key to exit..." and waits for a key to be pressed.
 	-end All following options will be passed to the script inside the executable. All preceding options are used by the executable itself and will not be passed to the script
-	
+
 	The Extract parameter has been removed to help protect the source code, This doesn't make the source code secure but dose make it
 	harder to be retrieved
 
@@ -75,7 +75,7 @@ function Convert-PS2EXE {
 	if UAC is enabled, compiled EXE run only in elevated context (UAC dialog appears if required)
 	.PARAMETER virtualize
 	application virtualization is activated (forcing x86 runtime)
-	.Example 
+	.Example
 	Convert-PS2EXE -inputFile c:\script.ps1 -outputFile C:\script.exe -noConsole -noConfigfile -iconFile c:\file.ico -title "script"
 	Creates a exe file named script.exe that wont show a powershell console using the file.ico file
 	.Notes
@@ -88,7 +88,7 @@ function Convert-PS2EXE {
 	Help syntax and Module creation by Kris Gross (http://www.mosaicMK.com)
 
 	This script is released under Microsoft Public Licence
-	that can be downloaded here: http://www.microsoft.com/opensource/licenses.mspx#Ms-PL
+	that can be downloaded here: https://opensource.org/licenses/MS-PL
 	.link
 	http://www.mosaicMK.com
 #>
@@ -2272,7 +2272,7 @@ function Convert-FileToBase64 {
 	Version 1.0.0.1
 
 	How To use the base64 code
-	$BaseCode = @" <CodeFromTextFile> "@ 
+	$BaseCode = @" <CodeFromTextFile> "@
 	Set-Content -Path "<NameOfFile>" -Value $BaseCode -Encoding Byte
 	.LINK
 	http://MosaicMK.com
@@ -2449,7 +2449,7 @@ https://www.MosaicMK.com/
 	try {
 		$Rkey = Get-Content "$KeyFile" -ErrorAction Stop
 		$RKey = $Rkey -join ","
-		$KeyObject = New-Object -TypeName psobject 
+		$KeyObject = New-Object -TypeName psobject
 		$KeyObject | Add-Member -MemberType NoteProperty -Name Key -Value $Rkey
 		$KeyObject
 	} Catch {Write-Error "$_"}

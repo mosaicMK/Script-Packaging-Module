@@ -1,5 +1,6 @@
 # Script-Packaging-Module
 PowerShell Module to help package a PowerShell script or script resorces 
+https://www.powershellgallery.com/packages/ScriptPackaging/
 
 ### Installing
 Download the current branch and import the ScriptPackage.psd1 file into PowerShell

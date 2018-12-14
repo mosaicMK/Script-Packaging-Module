@@ -1,11 +1,12 @@
 # Script-Packaging-Module
 PowerShell Module to help package a PowerShell script or script resorces 
-https://www.powershellgallery.com/packages/ScriptPackaging/
 
 ### Installing
 Download the current branch and import the ScriptPackage.psd1 file into PowerShell
+or you can install the module from our PowerShell Gallery repository
+https://www.powershellgallery.com/packages/ScriptPackaging/
 
-Once imported you will have 5 new commands that you can use to package your script files 
+Once imported you will have 6 new commands that you can use to package your script files 
 
 ### Convert-PS2XE
 
@@ -26,10 +27,9 @@ The below will convert the code back to the original file
 
 This command will encrypt a file using AES 256 bit encryption to a dll file and will generate a key printed to a txt file that can be used to decypt the file
 
-You can use the fallowing to decypt the file and run it from another PowerShell script
+You can use the following to decypt the file and run it from another PowerShell script
 ```
     $Path = <Path to DLL>
-    trap { "Decryption failed"; break }
     $secure = Get-Content $path | ConvertTo-SecureString -Key (<Content of key file seperated by a ",">)
     $BSTR = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($Secure)
     $script = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto($BSTR)

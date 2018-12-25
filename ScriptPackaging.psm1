@@ -1,96 +1,89 @@
 function Convert-PS2EXE {
 <#
-	.SYNOPSIS
-	Create a exe file from a PowerShell script file
-	.DESCRIPTION
-	A generated executables has the following reserved parameters:
+.SYNOPSIS
+Create a exe file from a PowerShell script file
+.DESCRIPTION
+A generated executables has the following reserved parameters:
 
-	-debug Forces the executable to be debugged. It calls "System.Diagnostics.Debugger.Break()".The script will not be executed.
-	-wait At the end of the script execution it writes "Hit any key to exit..." and waits for a key to be pressed.
-	-end All following options will be passed to the script inside the executable. All preceding options are used by the executable itself and will not be passed to the script
+-debug Forces the executable to be debugged. It calls "System.Diagnostics.Debugger.Break()".The script will not be executed.
+-wait At the end of the script execution it writes "Hit any key to exit..." and waits for a key to be pressed.
+-end All following options will be passed to the script inside the executable. All preceding options are used by the executable itself and will not be passed to the script
 
-	The Extract parameter has been removed to help protect the source code, This doesn't make the source code secure but dose make it
-	harder to be retrieved
+The Extract parameter has been removed to help protect the source code, This doesn't make the source code secure but dose make it
+harder to be retrieved
 
-	Script variables:
-	Since PS2EXE converts a script to an executable, script related variables are not available anymore. Especially the variable $PSScriptRoot is empty.
-	The variable $MyInvocation is set to other values than in a script.
-
-	You can retrieve the script/executable path independant of compiled/not compiled with the following code (thanks to JacquesFS):
-
-	if ($MyInvocation.MyCommand.CommandType -eq "ExternalScript"){ $ScriptPath = Split-Path -Parent -Path $MyInvocation.MyCommand.Definition }else{ $ScriptPath = Split-Path -Parent -Path ([Environment]::GetCommandLineArgs()[0]) }
-	.PARAMETER inputFile
-	Powershell script that you want to convert to EXE
-	.PARAMETER outputFile
-	destination EXE file name
-	.PARAMETER verbose
-	output verbose informations - if any
-	.PARAMETER debug
-	generate debug informations for output file
-	.PARAMETER runtime20
-	this switch forces PS2EXE to create a config file for the generated EXE that contains the
-	supported .NET Framework versions"" setting for .NET Framework 2.0/3.x for PowerShell 2.0
-	.PARAMETER runtime40
-	this switch forces PS2EXE to create a config file for the generated EXE that contains the
-	supported .NET Framework versions"" setting for .NET Framework 4.x for PowerShell 3.0 or higher
-	.PARAMETER lcid
-	location ID for the compiled EXE. Current user culture if not specified
-	.PARAMETER x86
-	compile for 32-bit runtime only
-	.PARAMETER x64
-	compile for 64-bit runtime only
-	.PARAMETER sta
-	Single Thread Apartment Mode
-	.PARAMETER mta
-	Multi Thread Apartment Mode
-	.PARAMETER noConsole
-	the resulting EXE file will be a Windows Forms app without a console window.
-	The GUI expanded every output and input function like Write-Host, Write-Output, Write-Error,
-	Out-Default, Prompt, ReadLine to use WinForms message boxes or input boxes automatically when compiling a GUI application.
-	Per default output of commands are formatted line per line (as an array of strings).
-	When your command generates 10 lines of output and you use GUI output, 10 message boxes will appear each awaitung for an OK.
-	To prevent this pipe your command to the comandlet Out-String. This will convert the output to a string array with 10 lines,
-	all output will be shown in one message box (for example: dir C:\ | Out-String).
-	.PARAMETER credentialGUI
-	use GUI for prompting credentials in console mode
-	.PARAMETER iconFile
-	icon file name for the compiled EXE
-	.PARAMETER title
-	title information (displayed in details tab of Windows Explorer's properties dialog)
-	.PARAMETER description
-	description information (not displayed, but embedded in executable)
-	.PARAMETER company
-	company information (not displayed, but embedded in executable)
-	.PARAMETER product
-	product information (displayed in details tab of Windows Explorer's properties dialog)
-	.PARAMETER copyright
-	copyright information (displayed in details tab of Windows Explorer's properties dialog)
-	.PARAMETER trademark
-	trademark information (displayed in details tab of Windows Explorer's properties dialog)
-	.PARAMETER version
-	version information (displayed in details tab of Windows Explorer's properties dialog)
-	.PARAMETER noConfigfile
-	write no config file (<outputfile>.exe.config)
-	.PARAMETER requireAdmin
-	if UAC is enabled, compiled EXE run only in elevated context (UAC dialog appears if required)
-	.PARAMETER virtualize
-	application virtualization is activated (forcing x86 runtime)
-	.Example
-	Convert-PS2EXE -inputFile c:\script.ps1 -outputFile C:\script.exe -noConsole -noConfigfile -iconFile c:\file.ico -title "script"
-	Creates a exe file named script.exe that wont show a powershell console using the file.ico file
-	.Notes
-	Version 1.1.4.2
-	PS2EXE-GUI v0.5.0.12
-	Written by: Ingo Karstein (http://blog.karstein-consulting.com)
-	Reworked and GUI support by Markus Scholtes
-	Module intagration and Help syntax created by MosaicMK Software LLC (https://www.mosaicmk.com) or (https://blog.mosaicmk.com)
-	Origanal script can be found https://gallery.technet.microsoft.com/scriptcenter/PS2EXE-GUI-Convert-e7cb69d5
-	Help syntax and Module creation by Kris Gross (http://www.mosaicMK.com)
-
-	This script is released under Microsoft Public Licence
-	that can be downloaded here: https://opensource.org/licenses/MS-PL
-	.link
-	http://www.mosaicMK.com
+Script variables:
+Since PS2EXE converts a script to an executable, script related variables are not available anymore. Especially the variable $PSScriptRoot is empty.
+The variable $MyInvocation is set to other values than in a script.
+You can retrieve the script/executable path independant of compiled/not compiled with the following code (thanks to JacquesFS):
+if ($MyInvocation.MyCommand.CommandType -eq "ExternalScript"){ $ScriptPath = Split-Path -Parent -Path $MyInvocation.MyCommand.Definition }else{ $ScriptPath = Split-Path -Parent -Path ([Environment]::GetCommandLineArgs()[0]) }
+.PARAMETER inputFile
+Powershell script that you want to convert to EXE
+.PARAMETER outputFile
+destination EXE file name
+.PARAMETER verbose
+output verbose informations - if any
+.PARAMETER debug
+generate debug informations for output file
+.PARAMETER runtime20
+this switch forces PS2EXE to create a config file for the generated EXE that contains the
+supported .NET Framework versions"" setting for .NET Framework 2.0/3.x for PowerShell 2.0
+.PARAMETER runtime40
+this switch forces PS2EXE to create a config file for the generated EXE that contains the
+supported .NET Framework versions"" setting for .NET Framework 4.x for PowerShell 3.0 or higher
+.PARAMETER lcid
+location ID for the compiled EXE. Current user culture if not specified
+.PARAMETER platform
+compile for the choice platform (x86, x64, anycpu)
+.PARAMETER sta
+Single Thread Apartment Mode
+.PARAMETER mta
+Multi Thread Apartment Mode
+.PARAMETER noConsole
+the resulting EXE file will be a Windows Forms app without a console window.
+The GUI expanded every output and input function like Write-Host, Write-Output, Write-Error,
+Out-Default, Prompt, ReadLine to use WinForms message boxes or input boxes automatically when compiling a GUI application.
+Per default output of commands are formatted line per line (as an array of strings).
+When your command generates 10 lines of output and you use GUI output, 10 message boxes will appear each awaitung for an OK.
+To prevent this pipe your command to the comandlet Out-String. This will convert the output to a string array with 10 lines,
+all output will be shown in one message box (for example: dir C:\ | Out-String).
+.PARAMETER credentialGUI
+use GUI for prompting credentials in console mode
+.PARAMETER iconFile
+icon file name for the compiled EXE
+.PARAMETER title
+title information (displayed in details tab of Windows Explorer's properties dialog)
+.PARAMETER description
+description information (not displayed, but embedded in executable)
+.PARAMETER company
+company information (not displayed, but embedded in executable)
+.PARAMETER product
+product information (displayed in details tab of Windows Explorer's properties dialog)
+.PARAMETER copyright
+copyright information (displayed in details tab of Windows Explorer's properties dialog)
+.PARAMETER trademark
+trademark information (displayed in details tab of Windows Explorer's properties dialog)
+.PARAMETER version
+version information (displayed in details tab of Windows Explorer's properties dialog)
+.PARAMETER noConfigfile
+write no config file (<outputfile>.exe.config)
+.PARAMETER requireAdmin
+if UAC is enabled, compiled EXE run only in elevated context (UAC dialog appears if required)
+.PARAMETER virtualize
+application virtualization is activated (forcing x86 runtime)
+.Example
+Convert-PS2EXE -inputFile c:\script.ps1 -outputFile C:\script.exe -noConsole -noConfigfile -iconFile c:\file.ico -title "script"
+Creates a exe file named script.exe that wont show a powershell console using the file.ico file
+.Notes
+PS2EXE-GUI v0.5.0.12
+Written by: Ingo Karstein (http://blog.karstein-consulting.com)
+Reworked and GUI support by Markus Scholtes
+Module intagration and Help syntax created by MosaicMK Software LLC (https://www.mosaicmk.com) or (https://blog.mosaicmk.com)
+Origanal script can be found https://gallery.technet.microsoft.com/scriptcenter/PS2EXE-GUI-Convert-e7cb69d5
+This script is released under Microsoft Public Licence
+that can be downloaded here: https://opensource.org/licenses/MS-PL
+.link
+https://www.mosaicmk.com
 #>
 
 Param(
@@ -102,8 +95,9 @@ Param(
 	[switch]$debugEXE,
 	[switch]$runtime20,
 	[switch]$runtime40,
-	[switch]$x86,
-	[switch]$x64,
+	[Parameter(Mandatory=$true)]
+	[ValidateSet('x64','x86','anycpu')]
+	[string]$platform,
 	[int]$lcid,
 	[switch]$Sta,
 	[switch]$Mta,
@@ -123,37 +117,33 @@ Param(
 	[switch]$noConfigfile
 )
 
-if ($runtime20 -and $runtime40){Throw "You cannot use switches -runtime20 and -runtime40 at the same time!"}
-if ($Sta -and $Mta){Throw "You cannot use switches -Sta and -Mta at the same time!"}
-if ([string]::IsNullOrEmpty($inputFile) -or [string]::IsNullOrEmpty($outputFile)) {exit -1}
+if ($runtime20 -and $runtime40){Write-Error "You cannot use switches -runtime20 and -runtime40 at the same time!";Return}
+if ($Sta -and $Mta){Write-Error "You cannot use switches -Sta and -Mta at the same time!";Return}
 
 $psversion = 0
 if ($PSVersionTable.PSVersion.Major -ge 4){$psversion = 4}
 if ($PSVersionTable.PSVersion.Major -eq 3){$psversion = 3}
 if ($PSVersionTable.PSVersion.Major -eq 2){$psversion = 2}
-if ($psversion -eq 0){Throw "The powershell version is unknown!"}
+if ($psversion -eq 0){Write-Error "The powershell version is unknown!";Return}
 $inputFile = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($inputFile)
 $outputFile = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($outputFile)
-if (!(Test-Path $inputFile -PathType Leaf)){Throw "Input file $($inputfile) not found!"}
-if ($inputFile -eq $outputFile){Throw "Input file is identical to output file!"}
+if (!(Test-Path $inputFile -PathType Leaf)){Write-Error "Input file $($inputfile) not found!";Return}
+if ($inputFile -eq $outputFile){Write-Error "Input file is identical to output file!";Return}
 
 if (!([string]::IsNullOrEmpty($iconFile))){
 	# retrieve absolute path independent whether path is given relative oder absolute
 	$iconFile = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($iconFile)
-	if (!(Test-Path $iconFile -PathType Leaf)){Throw "Icon file $($iconFile) not found!"}
+	if (!(Test-Path $iconFile -PathType Leaf)){Write-Error "Icon file $($iconFile) not found!";Return}
 }
 
-if ($requireAdmin -And $virtualize){Throw "-requireAdmin cannot be combined with -virtualize"}
+if ($requireAdmin -And $virtualize){Write-Error "-requireAdmin cannot be combined with -virtualize";Return}
 if (!$runtime20 -and !$runtime40){if ($psversion -eq 4){$runtime40 = $TRUE}elseif($psversion -eq 3){$runtime40 = $TRUE}else{$runtime20 = $TRUE}}
 
-if ($psversion -lt 3 -and $runtime40){Throw "You need to run ps2exe in an Powershell 3.0 or higher environment to use parameter -runtime40"}
-
+if ($psversion -lt 3 -and $runtime40){Write-Error "You need to run ps2exe in an Powershell 3.0 or higher environment to use parameter -runtime40";return}
 # Set default apartment mode for powershell version if not set by parameter
 if ($psversion -lt 3 -and !$Mta -and !$Sta){$Mta = $TRUE}
-
 # Set default apartment mode for powershell version if not set by parameter
 if ($psversion -ge 3 -and !$Mta -and !$Sta){$Sta = $TRUE}
-
 # escape escape sequences in version info
 $title = $title -replace "\\", "\\"
 $product = $product -replace "\\", "\\"
@@ -162,17 +152,15 @@ $trademark = $trademark -replace "\\", "\\"
 $description = $description -replace "\\", "\\"
 $company = $company -replace "\\", "\\"
 
-if (![string]::IsNullOrEmpty($version)){ if ($version -notmatch "(^\d+\.\d+\.\d+\.\d+$)|(^\d+\.\d+\.\d+$)|(^\d+\.\d+$)|(^\d+$)"){Throw "Version number has to be supplied in the form n.n.n.n, n.n.n, n.n or n (with n as number)!"}}
+if (![string]::IsNullOrEmpty($version)){ if ($version -notmatch "(^\d+\.\d+\.\d+\.\d+$)|(^\d+\.\d+\.\d+$)|(^\d+\.\d+$)|(^\d+$)"){Write-Error "Version number has to be supplied in the form n.n.n.n, n.n.n, n.n or n (with n as number)!";Return}}
 
 $type = ('System.Collections.Generic.Dictionary`2') -as "Type"
 $type = $type.MakeGenericType( @( ("System.String" -as "Type"), ("system.string" -as "Type") ) )
 $o = [Activator]::CreateInstance($type)
 
 $compiler20 = $FALSE
-if ($psversion -eq 3 -or $psversion -eq 4){
-	$o.Add("CompilerVersion", "v4.0")
-}
-else{
+if ($psversion -eq 3 -or $psversion -eq 4){$o.Add("CompilerVersion", "v4.0")
+}else{
 	if (Test-Path ("$ENV:WINDIR\Microsoft.NET\Framework\v3.5\csc.exe"))
 	{ $o.Add("CompilerVersion", "v3.5")}else{
 		Write-Warning "No .Net 3.5 compiler found, using .Net 2.0 compiler."
@@ -183,13 +171,17 @@ else{
 }
 
 $referenceAssembies = @("System.dll")
-if (!$noConsole){if ([System.AppDomain]::CurrentDomain.GetAssemblies() | Where-Object { $_.ManifestModule.Name -ieq "Microsoft.PowerShell.ConsoleHost.dll" }){$referenceAssembies += ([System.AppDomain]::CurrentDomain.GetAssemblies() | Where-Object { $_.ManifestModule.Name -ieq "Microsoft.PowerShell.ConsoleHost.dll" } | Select-Object-Object-Object -First 1).Location}}
-$referenceAssembies += ([System.AppDomain]::CurrentDomain.GetAssemblies() | Where-Object { $_.ManifestModule.Name -ieq "System.Management.Automation.dll" } | Select -First 1).Location
+if (!$noConsole){
+	if ([System.AppDomain]::CurrentDomain.GetAssemblies() | Where-Object { $_.ManifestModule.Name -ieq "Microsoft.PowerShell.ConsoleHost.dll" }){
+		$referenceAssembies += ([System.AppDomain]::CurrentDomain.GetAssemblies() | Where-Object { $_.ManifestModule.Name -ieq "Microsoft.PowerShell.ConsoleHost.dll" } | Select-Object -First 1).Location
+	}
+}
+$referenceAssembies += ([System.AppDomain]::CurrentDomain.GetAssemblies() | Where-Object { $_.ManifestModule.Name -ieq "System.Management.Automation.dll" } | Select-Object -First 1).Location
 
 if ($runtime40){
 	$n = New-Object System.Reflection.AssemblyName("System.Core, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")
 	[System.AppDomain]::CurrentDomain.Load($n) | Out-Null
-	$referenceAssembies += ([System.AppDomain]::CurrentDomain.GetAssemblies() | Where-Object { $_.ManifestModule.Name -ieq "System.Core.dll" } | Select -First 1).Location
+	$referenceAssembies += ([System.AppDomain]::CurrentDomain.GetAssemblies() | Where-Object { $_.ManifestModule.Name -ieq "System.Core.dll" } | Select-Object -First 1).Location
 }
 
 if ($noConsole){
@@ -199,12 +191,9 @@ if ($noConsole){
 	$n = New-Object System.Reflection.AssemblyName("System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")
 	if ($runtime40){$n = New-Object System.Reflection.AssemblyName("System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")}
 	[System.AppDomain]::CurrentDomain.Load($n) | Out-Null
-	$referenceAssembies += ([System.AppDomain]::CurrentDomain.GetAssemblies() | ? { $_.ManifestModule.Name -ieq "System.Windows.Forms.dll" } | Select -First 1).Location
-	$referenceAssembies += ([System.AppDomain]::CurrentDomain.GetAssemblies() | ? { $_.ManifestModule.Name -ieq "System.Drawing.dll" } | Select -First 1).Location
+	$referenceAssembies += ([System.AppDomain]::CurrentDomain.GetAssemblies() | Where-Object { $_.ManifestModule.Name -ieq "System.Windows.Forms.dll" } | Select-Object -First 1).Location
+	$referenceAssembies += ([System.AppDomain]::CurrentDomain.GetAssemblies() | Where-Object { $_.ManifestModule.Name -ieq "System.Drawing.dll" } | Select-Object -First 1).Location
 }
-
-$platform = "anycpu"
-if ($x64 -and !$x86) { $platform = "x64" } else { if ($x86 -and !$x64) { $platform = "x86" }}
 
 $cop = (New-Object Microsoft.CSharp.CSharpCodeProvider($o))
 $cp = New-Object System.CodeDom.Compiler.CompilerParameters($referenceAssembies, $outputFile)
@@ -221,18 +210,14 @@ if ($requireAdmin){
 	$reqAdmParam = "`"/win32manifest:$($outputFile+".win32manifest")`""
 }
 
-if (!$virtualize){
-	$cp.CompilerOptions = "/platform:$($platform) /target:$( if ($noConsole){'winexe'}else{'exe'}) $($iconFileParam) $($reqAdmParam)" }
-	else{
-		Write-Host "Application virtualization is activated, forcing x86 platfom."
-		$cp.CompilerOptions = "/platform:x86 /target:$( if ($noConsole) { 'winexe' } else { 'exe' } ) /nowin32manifest $($iconFileParam)"
-	}
+if (!$virtualize){$cp.CompilerOptions = "/platform:$($platform) /target:$( if ($noConsole){'winexe'}else{'exe'}) $($iconFileParam) $($reqAdmParam)"
+	}else{Write-Warning "Application virtualization is activated, forcing x86 platfom." ; $cp.CompilerOptions = "/platform:x86 /target:$( if ($noConsole) { 'winexe' } else { 'exe' } ) /nowin32manifest $($iconFileParam)"}
 $cp.IncludeDebugInformation = $debugEXE
 
 if ($debugEXE){$cp.TempFiles.KeepFiles = $TRUE}
 
 $content = Get-Content -LiteralPath ($inputFile) -Encoding UTF8 -ErrorAction SilentlyContinue
-if ($content -eq $null){Throw "No data found. May be read error or file protected."}
+if ($content -eq $null){Write-Error "No data found. May be read error or file protected.";return}
 $scriptInp = [string]::Join("`r`n", $content)
 $script = [System.Convert]::ToBase64String(([System.Text.Encoding]::UTF8.GetBytes($scriptInp)))
 
@@ -249,7 +234,7 @@ if ($lcid){
 $programFrame = @"
 // Simple PowerShell host created by Ingo Karstein (http://blog.karstein-consulting.com) for PS2EXE
 // Reworked and GUI support by Markus Scholtes
-// Module incorperation and help syntacs creation by Kris Gross
+// Module incorperation and help syntacs creation by MosaicMK Software LLC (https://www.mosaicmk.com)
 
 using System;
 using System.Collections.Generic;
@@ -2259,70 +2244,66 @@ if ($requireAdmin){if(Test-Path $($outputFile+".win32manifest")){Remove-Item $($
 
 function Convert-FileToBase64 {
 <#
-	.SYNOPSIS
-	Convert a file to base64
-	.DESCRIPTION
-	You can convert any file to base64 that can later be called by a script or imbeded in a script
-	.PARAMETER InFile
-	The path to the file that is to be converted
-	.PARAMETER OutFile
-	path to the output file (this should be a txt file)
-	.NOTES
-	Contact: Contact@mosacimk.com
-	Version 1.0.0.1
-
-	How To use the base64 code
-	$BaseCode = @" <CodeFromTextFile> "@
-	Set-Content -Path "<NameOfFile>" -Value $BaseCode -Encoding Byte
-	.LINK
-	http://MosaicMK.com
+.SYNOPSIS
+Convert a file to base64
+.DESCRIPTION
+You can convert any file to base64 that can later be called by a script or imbeded in a script
+How To use the base64 code:
+$BaseCode = @" <CodeFromTextFile> "@
+Set-Content -Path "<NameOfFile>" -Value $BaseCode -Encoding Byte
+.PARAMETER InFile
+The path to the file that is to be converted
+.PARAMETER OutFile
+path to the output file (this should be a txt file)
+.NOTES
+Contact: Contact@mosacimk.com
+Version 1.0.1
+.LINK
+http://mosaicmk.com
 #>
-    PARAM(
-        [Parameter(Mandatory=$true)]
-        [string]$InFile,
-        [Parameter(Mandatory=$true)]
-        [string]$outFile
-    )
-    try {
-        $encodedImage = [convert]::ToBase64String((get-content $inFile -encoding byte))
+	PARAM(
+		[Parameter(Mandatory=$true)]
+		[string]$InFile,
+		[Parameter(Mandatory=$true)]
+		[string]$outFile
+	)
+	try {
+		$encodedImage = [convert]::ToBase64String((get-content $inFile -encoding byte))
 		$encodedImage -replace ".{80}" , "$&`r`n" | set-content $outFile
-    }
-    catch {Write-Error "$_"}
+		}
+	catch {Write-Error "$_"}
 }
 
 function Convert-FileToDll {
 <#
-    .SYNOPSIS
-	Convert a ps1 file to a encrypted file
-	.DESCRIPTION
-	Convert a PowerShell script file to a encryped file using 256bit AES encryption
-	.PARAMETER InFile
-	Path to the PowerShell script
-	.PARAMETER OutFile
-	Path to wheer the encrypted file is to be placed file
-	.PARAMETER KeyToFile
-	Path to where the key is to be written
-	.PARAMETER KeyToHost
-	Writes the key to the host window
-	.PARAMETER KeyFile
-	Path to a pre created file containing the key you wish to use (Can be created with New-AESKeyFile)
-	.EXAMPLE
-	PS2DLL.ps1 -InFile C:\Read-File.ps1 -OutFile C:\Read-File.dll -KeyToFile
-	This will enctypt Read-File.ps1 to read-file.dll and print the key
-	.NOTES
-	Contact: Contact@mosaicMK.com
-	Version 1.1.1.2
-
-	To Use the dll in a script
-	$Path = <Path to DLL>
-	trap { "Decryption failed"; break }
-	$secure = Get-Content $path | ConvertTo-SecureString -Key (<Content of key file seperated by a ",">)
-	$BSTR = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($Secure)
-	$script = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto($BSTR)
-	Invoke-Expression $script
-
-	.LINK
-	https://www.MosaicMK.com/
+.SYNOPSIS
+Convert a ps1 file to a encrypted file
+.DESCRIPTION
+Convert a PowerShell script file to a encryped file using 256bit AES encryption
+To Use the dll in a script:
+$Path = <Path to DLL>
+$secure = Get-Content $path | ConvertTo-SecureString -Key (<Content of key file seperated by a ",">)
+$BSTR = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($Secure)
+$script = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto($BSTR)
+Invoke-Expression $script
+.PARAMETER InFile
+Path to the PowerShell script
+.PARAMETER OutFile
+Path to wheer the encrypted file is to be placed file
+.PARAMETER KeyToFile
+Path to where the key is to be written
+.PARAMETER KeyToHost
+Writes the key to the host window
+.PARAMETER KeyFile
+Path to a pre created file containing the key you wish to use (Can be created with New-AESKeyFile)
+.EXAMPLE
+PS2DLL.ps1 -InFile C:\Read-File.ps1 -OutFile C:\Read-File.dll -KeyToFile
+This will enctypt Read-File.ps1 to read-file.dll and print the key
+.NOTES
+Contact: Contact@mosaicMK.com
+Version 1.1.2
+.LINK
+https://www.mosaicmk.com
 #>
 	PARAM
 	(
@@ -2356,26 +2337,23 @@ function Convert-FileToDll {
 }
 
 function New-AESKeyFile {
-	<#
-    .SYNOPSIS
-	Create a file containing a 256 bit key
-	.DESCRIPTION
-	Creates a file that can be used with Convert-FileToDll
-	.PARAMETER KeyFile
-	Path to where the Key file is to be created
-	.EXAMPLE
-	New-AESKeyFile -KeyFile C:\File.txt
-	Creates the file at C:\File.txt
-	.NOTES
-	Contact: Contact@mosaicMK.com
-	Version 1.0.0.0
-	.LINK
-	https://www.MosaicMK.com/
-	#>
-	param (
-		[Parameter(Mandatory=$true)]
-		[string]$KeyFile
-		)
+<#
+.SYNOPSIS
+Create a file containing a 256 bit key
+.DESCRIPTION
+Creates a file that can be used with Convert-FileToDll
+.PARAMETER KeyFile
+Path to where the Key file is to be created
+.EXAMPLE
+New-AESKeyFile -KeyFile C:\File.txt
+Creates the file at C:\File.txt
+.NOTES
+Contact: Contact@mosaicMK.com
+Version 1.0.0
+.LINK
+https://www.Mosaicmk.com/
+#>
+	param ([Parameter(Mandatory=$true)][string]$KeyFile)
 	try {
 		[byte[]]$KeyGen = (0..100) + (100..200) | Get-Random -Count 32 -ErrorAction Stop
 		Set-Content -Value $KeyGen -Path "$KeyFile" -ErrorAction Stop
@@ -2384,48 +2362,48 @@ function New-AESKeyFile {
 }
 
 function Convert-StringToSecureString {
-	<#
-    .SYNOPSIS
-    Convert string to a secure string
-    .DESCRIPTION
-    Convert a strign to a 256 bit ecrypet string to be used in a script
-    .PARAMETER InString
-    The string to be encrypted
-	.PARAMETER SecureStringToFile
-	Writes the secure stringto a file
-	.PARAMETER SecureStringToHost
-	Writes the string to the host window
-	.PARAMETER KeyToFile
-	Writes the decryption key to a file
-	.PARAMETER KeyToHost
-	Writes the decryption key to the host window
-	.EXAMPLE
-	Convert-StringToSecureString -InString "John Smith lives at 8888 Park Drive" -SecureStringToHost -KeyToHost
-	Encrypts the string "John Smith lives at 8888 Park Drive" and Write they encrypted string to the host and the
-	key used to encrypt the string.
-    .NOTES
-    Contact: Contact@mosaicMK.com
-    Version 1.1.0.1
-    .LINK
-    http://www.mosaicMK.com/
+<#
+.SYNOPSIS
+Convert string to a secure string
+.DESCRIPTION
+Convert a strign to a 256 bit ecrypet string to be used in a script
+.PARAMETER InString
+The string to be encrypted
+.PARAMETER SecureStringToFile
+Writes the secure stringto a file
+.PARAMETER SecureStringToHost
+Writes the string to the host window
+.PARAMETER KeyToFile
+Writes the decryption key to a file
+.PARAMETER KeyToHost
+Writes the decryption key to the host window
+.EXAMPLE
+Convert-StringToSecureString -InString "John Smith lives at 8888 Park Drive" -SecureStringToHost -KeyToHost
+Encrypts the string "John Smith lives at 8888 Park Drive" and Write they encrypted string to the host and the
+key used to encrypt the string.
+.NOTES
+Contact: Contact@mosaicmk.com
+Version 1.1.1
+.LINK
+http://www.mosaicmk.com/
 #>
-		PARAM(
-		[Parameter(Mandatory=$true)]
-		[string]$InString,
-		[string]$SecureStringToFile,
-		[switch]$SecureStringToHost,
-		[string]$KeyToFile,
-		[switch]$KeyToHost,
-		[string]$KeyFile
-	)
+  PARAM(
+   [Parameter(Mandatory=$true)]
+   [string]$InString,
+   [string]$SecureStringToFile,
+   [switch]$SecureStringToHost,
+   [string]$KeyToFile,
+   [switch]$KeyToHost,
+   [string]$KeyFile
+)
 
-	IF (!($KeyFile)){[byte[]]$Key = (0..100) + (100..200)| Get-Random -Count 32 -ErrorAction Stop} else {[byte[]]$Key = Get-Content "$KeyFile" -ErrorAction Stop}
-	$secure = ConvertTo-SecureString $InString -asPlainText -force
-	$export = $secure | ConvertFrom-SecureString -Key $key
-	If ($SecureStringToFile){Set-Content $SecureStringToFile $export}
-	If ($SecureStringToHost){Write-Host "SecureString: $export"}
-	IF ($KeyToFile){Set-Content $KeyToFile $Key}
-	IF ($KeyToHost){Write-Host "Key: $Key"}
+  IF (!($KeyFile)){[byte[]]$Key = (0..100) + (100..200)| Get-Random -Count 32 -ErrorAction Stop} else {[byte[]]$Key = Get-Content "$KeyFile" -ErrorAction Stop}
+  $secure = ConvertTo-SecureString $InString -asPlainText -force
+  $export = $secure | ConvertFrom-SecureString -Key $key
+  If ($SecureStringToFile){Set-Content $SecureStringToFile $export}
+  If ($SecureStringToHost){Write-Host "SecureString: $export"}
+  IF ($KeyToFile){Set-Content $KeyToFile $Key}
+  IF ($KeyToHost){Write-Host "Key: $Key"}
 }
 
 function Read-AESKeyFile {
@@ -2438,19 +2416,16 @@ Prints the AES key from a file to the host window allow the key to be pasted int
 Path to where the Key file is
 .NOTES
 Contact: Contact@mosaicMK.com
-Version 1.0.0.0
+Version 1.0.0
 .LINK
-https://www.MosaicMK.com/
+https://www.mosaicmk.com/
 #>
-	param (
-			[Parameter(Mandatory=$true)]
-			[string]$KeyFile
-		)
-	try {
-		$Rkey = Get-Content "$KeyFile" -ErrorAction Stop
-		$RKey = $Rkey -join ","
-		$KeyObject = New-Object -TypeName psobject
-		$KeyObject | Add-Member -MemberType NoteProperty -Name Key -Value $Rkey
-		$KeyObject
-	} Catch {Write-Error "$_"}
+  param ([Parameter(Mandatory=$true)][string]$KeyFile)
+  try {
+   $Rkey = Get-Content "$KeyFile" -ErrorAction Stop
+   $RKey = $Rkey -join ","
+   $KeyObject = New-Object -TypeName psobject
+   $KeyObject | Add-Member -MemberType NoteProperty -Name Key -Value $Rkey
+   $KeyObject
+   } Catch {Write-Error "$_"}
 }

@@ -13,6 +13,8 @@ Once imported you will have 6 new commands that you can use to package your scri
 This Command uses the famous [ps2exe](https://gallery.technet.microsoft.com/scriptcenter/PS2EXE-GUI-Convert-e7cb69d5) script 
 to convert a ps1 file into a exe file
 
+We have removed the -Extract paramiter from the compiled exe this will help to secure the code
+
 ### Convert-FileToBase64
 
 This command will convert a file to base64 code and print the code to a txt file 

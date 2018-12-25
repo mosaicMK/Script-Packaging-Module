@@ -46,3 +46,9 @@ This command will create a file that contains a AES key that can be used with Co
 ### Read-AESKey
 
 Prints the AES key from a file to the host window allow the key to be pasted into a script or command
+
+# Change Log
+
+### 1.3.2 
+- Fixed a issue that prevented the Convert-PS2EXE function from working with out the -onConsole paramiter
+- Changed the -x64 and the -x86 paramiters to the -platform paramiter

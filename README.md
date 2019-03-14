@@ -6,7 +6,28 @@ Download the current branch and import the ScriptPackage.psd1 file into PowerShe
 or you can install the module from our PowerShell Gallery repository
 https://www.powershellgallery.com/packages/ScriptPackaging/
 
-Once imported you will have 6 new commands that you can use to package your script files 
+Once imported run get-Command -Module ScriptPackaging
+
+### Whats New
+
+## Convert-PS2EXE
+Removed all .net 3.5 and lower options from Convert-PS2EXE, This is to reduces the complexity of the function and to promote
+better security
+
+Added the ability to change the progress bar color 
+
+Added an optional switch to enable -Extract on the compiled exe
+
+Added support for long path names 
+
+## Convert-FileToBASE64
+
+rewored the function to write the base64 code in blocks of 9000 bits instead of all at once. This makes the convertion proccess much
+fast and way less memory heavy
+
+## Convert-FileFromBase64
+
+This is a new function based off Convert-ToBase64. This will convert the code back to a file in the same method
 
 ### Convert-PS2XE
 

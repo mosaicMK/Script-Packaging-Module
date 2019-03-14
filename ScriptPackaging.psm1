@@ -1,96 +1,92 @@
 function Convert-PS2EXE {
 <#
-	.SYNOPSIS
-	Create a exe file from a PowerShell script file
-	.DESCRIPTION
-	A generated executables has the following reserved parameters:
+.SYNOPSIS
+Create an exe file from a PowerShell script file
+.DESCRIPTION
+A generated executables has the following reserved parameters:
 
-	-debug Forces the executable to be debugged. It calls "System.Diagnostics.Debugger.Break()".The script will not be executed.
-	-wait At the end of the script execution it writes "Hit any key to exit..." and waits for a key to be pressed.
-	-end All following options will be passed to the script inside the executable. All preceding options are used by the executable itself and will not be passed to the script
+-debug Forces the executable to be debugged. It calls "System.Diagnostics.Debugger.Break()".The script will not be executed.
+-wait At the end of the script execution it writes "Hit any key to exit..." and waits for a key to be pressed.
+-end All following options will be passed to the script inside the executable. All preceding options are used by the executable itself and will not be passed to the script
+-Extract extracts the content of the exe to a file, This switch will only be present if the -AllowExtract option was used during the build proccess, 
 
-	The Extract parameter has been removed to help protect the source code, This doesn't make the source code secure but dose make it
-	harder to be retrieved
+Script variables:
+Since PS2EXE converts a script to an executable, script related variables are not available anymore. 
+Especially the variable $PSScriptRoot and variable $MyInvocation is set to other values than in a script.
+You can retrieve the script/executable path independant of compiled/not compiled with the following code:
+if ($MyInvocation.MyCommand.CommandType -eq "ExternalScript"){ $ScriptPath = Split-Path -Parent -Path $MyInvocation.MyCommand.Definition }else{ $ScriptPath = Split-Path -Parent -Path ([Environment]::GetCommandLineArgs()[0]) }
 
-	Script variables:
-	Since PS2EXE converts a script to an executable, script related variables are not available anymore. Especially the variable $PSScriptRoot is empty.
-	The variable $MyInvocation is set to other values than in a script.
+Exit Codes:
+At this time using the Exit <number> method of setting an exit code will not fill $LASTEXITCODE in the parrent proccess if you need to get an exit code 
+We recomend having the script write the code to the registry or a temp file for the parrent proccess to access 
 
-	You can retrieve the script/executable path independant of compiled/not compiled with the following code (thanks to JacquesFS):
-
-	if ($MyInvocation.MyCommand.CommandType -eq "ExternalScript"){ $ScriptPath = Split-Path -Parent -Path $MyInvocation.MyCommand.Definition }else{ $ScriptPath = Split-Path -Parent -Path ([Environment]::GetCommandLineArgs()[0]) }
-	.PARAMETER inputFile
-	Powershell script that you want to convert to EXE
-	.PARAMETER outputFile
-	destination EXE file name
-	.PARAMETER verbose
-	output verbose informations - if any
-	.PARAMETER debug
-	generate debug informations for output file
-	.PARAMETER runtime20
-	this switch forces PS2EXE to create a config file for the generated EXE that contains the
-	supported .NET Framework versions"" setting for .NET Framework 2.0/3.x for PowerShell 2.0
-	.PARAMETER runtime40
-	this switch forces PS2EXE to create a config file for the generated EXE that contains the
-	supported .NET Framework versions"" setting for .NET Framework 4.x for PowerShell 3.0 or higher
-	.PARAMETER lcid
-	location ID for the compiled EXE. Current user culture if not specified
-	.PARAMETER x86
-	compile for 32-bit runtime only
-	.PARAMETER x64
-	compile for 64-bit runtime only
-	.PARAMETER sta
-	Single Thread Apartment Mode
-	.PARAMETER mta
-	Multi Thread Apartment Mode
-	.PARAMETER noConsole
-	the resulting EXE file will be a Windows Forms app without a console window.
-	The GUI expanded every output and input function like Write-Host, Write-Output, Write-Error,
-	Out-Default, Prompt, ReadLine to use WinForms message boxes or input boxes automatically when compiling a GUI application.
-	Per default output of commands are formatted line per line (as an array of strings).
-	When your command generates 10 lines of output and you use GUI output, 10 message boxes will appear each awaitung for an OK.
-	To prevent this pipe your command to the comandlet Out-String. This will convert the output to a string array with 10 lines,
-	all output will be shown in one message box (for example: dir C:\ | Out-String).
-	.PARAMETER credentialGUI
-	use GUI for prompting credentials in console mode
-	.PARAMETER iconFile
-	icon file name for the compiled EXE
-	.PARAMETER title
-	title information (displayed in details tab of Windows Explorer's properties dialog)
-	.PARAMETER description
-	description information (not displayed, but embedded in executable)
-	.PARAMETER company
-	company information (not displayed, but embedded in executable)
-	.PARAMETER product
-	product information (displayed in details tab of Windows Explorer's properties dialog)
-	.PARAMETER copyright
-	copyright information (displayed in details tab of Windows Explorer's properties dialog)
-	.PARAMETER trademark
-	trademark information (displayed in details tab of Windows Explorer's properties dialog)
-	.PARAMETER version
-	version information (displayed in details tab of Windows Explorer's properties dialog)
-	.PARAMETER noConfigfile
-	write no config file (<outputfile>.exe.config)
-	.PARAMETER requireAdmin
-	if UAC is enabled, compiled EXE run only in elevated context (UAC dialog appears if required)
-	.PARAMETER virtualize
-	application virtualization is activated (forcing x86 runtime)
-	.Example
-	Convert-PS2EXE -inputFile c:\script.ps1 -outputFile C:\script.exe -noConsole -noConfigfile -iconFile c:\file.ico -title "script"
-	Creates a exe file named script.exe that wont show a powershell console using the file.ico file
-	.Notes
-	Version 1.1.4.2
-	PS2EXE-GUI v0.5.0.12
-	Written by: Ingo Karstein (http://blog.karstein-consulting.com)
-	Reworked and GUI support by Markus Scholtes
-	Module intagration and Help syntax created by MosaicMK Software LLC (https://www.mosaicmk.com) or (https://blog.mosaicmk.com)
-	Origanal script can be found https://gallery.technet.microsoft.com/scriptcenter/PS2EXE-GUI-Convert-e7cb69d5
-	Help syntax and Module creation by Kris Gross (http://www.mosaicMK.com)
-
-	This script is released under Microsoft Public Licence
-	that can be downloaded here: https://opensource.org/licenses/MS-PL
-	.link
-	http://www.mosaicMK.com
+.PARAMETER inputFile
+Powershell script that you want to convert to EXE
+.PARAMETER outputFile
+destination EXE file name
+.PARAMETER VerboseBuild
+output verbose informations - if any
+.PARAMETER DebugBuild
+generate debug informations for output file
+.PARAMETER lcid
+location ID for the compiled EXE. Current user culture if not specified
+.PARAMETER platform
+compile for the choice platform (x86, x64, anycpu)
+.PARAMETER sta
+Single Thread Apartment Mode
+.PARAMETER mta
+Multi Thread Apartment Mode
+.PARAMETER noConsole
+the resulting EXE file will be a Windows Forms app without a console window.
+The GUI expanded every output and input function like Write-Host, Write-Output, Write-Error,
+Out-Default, Prompt, ReadLine to use WinForms message boxes or input boxes automatically when compiling a GUI application.
+Per default output of commands are formatted line per line (as an array of strings).
+When your command generates 10 lines of output and you use GUI output, 10 message boxes will appear each awaitung for an OK.
+To prevent this pipe your command to the comandlet Out-String. This will convert the output to a string array with 10 lines,
+all output will be shown in one message box (for example: dir C:\ | Out-String).
+.PARAMETER credentialGUI
+use GUI for prompting credentials in console mode
+.PARAMETER iconFile
+icon file name for the compiled EXE
+.PARAMETER title
+title information (displayed in details tab of Windows Explorer's properties dialog)
+.PARAMETER description
+description information (not displayed, but embedded in executable)
+.PARAMETER company
+company information (not displayed, but embedded in executable)
+.PARAMETER product
+product information (displayed in details tab of Windows Explorer's properties dialog)
+.PARAMETER copyright
+copyright information (displayed in details tab of Windows Explorer's properties dialog)
+.PARAMETER trademark
+trademark information (displayed in details tab of Windows Explorer's properties dialog)
+.PARAMETER version
+version information (displayed in details tab of Windows Explorer's properties dialog)
+.PARAMETER noConfigfile
+write no config file (<outputfile>.exe.config)
+.PARAMETER requireAdmin
+if UAC is enabled, compiled EXE run only in elevated context (UAC dialog appears if required)
+.PARAMETER virtualize
+application virtualization is activated (forcing x86 runtime)
+.PARAMETER ProgressBarColor
+Specify the color used for a progress bar (Write-Progress)
+.PARAMETER AllowExtract
+Use this to add the -Extract Paramiter to the compiled exe
+.PARAMETER LongPaths
+Enables the use of paths longer then 265 characters
+.Example
+Convert-PS2EXE -inputFile c:\script.ps1 -outputFile C:\script.exe -noConsole -noConfigfile -iconFile c:\file.ico -title "script"
+Creates a exe file named script.exe that wont show a powershell console using the file.ico file
+.Notes
+PS2EXE-GUI v0.5.0.14
+Written by: Ingo Karstein (http://blog.karstein-consulting.com)
+Reworked and GUI support by Markus Scholtes
+Module intagration and Help syntax created by MosaicMK Software LLC (https://www.mosaicmk.com) or (https://blog.mosaicmk.com)
+Origanal script can be found https://gallery.technet.microsoft.com/scriptcenter/PS2EXE-GUI-Convert-e7cb69d5
+This script is released under Microsoft Public Licence
+that can be downloaded here: https://opensource.org/licenses/MS-PL
+.link
+https://www.mosaicmk.com
 #>
 
 Param(
@@ -98,63 +94,77 @@ Param(
 	[string]$inputFile,
 	[Parameter(Mandatory=$true)]
 	[string]$outputFile,
-	[switch]$verboseEXE,
-	[switch]$debugEXE,
-	[switch]$runtime20,
-	[switch]$runtime40,
-	[switch]$x86,
-	[switch]$x64,
+	[switch]$VerboseBuild,
+	[switch]$DebugBuild,
+	[Parameter(Mandatory=$true)]
+	[ValidateSet('x64','x86','anycpu')]
+	[string]$platform,
 	[int]$lcid,
 	[switch]$Sta,
 	[switch]$Mta,
-	[switch]$noConsole,
-	[switch]$nested,
-	[string]$iconFile=$null,
-	[string]$title,
-	[string]$description,
-	[string]$company,
-	[string]$product,
-	[string]$copyright,
-	[string]$trademark,
-	[string]$version,
-	[switch]$requireAdmin,
-	[switch]$virtualize,
-	[switch]$credentialGUI,
-	[switch]$noConfigfile
+	[switch]$NoConsole,
+	[string]$IconFile=$null,
+	[string]$Title,
+	[string]$Description,
+	[string]$Company,
+	[string]$Product,
+	[string]$Copyright,
+	[string]$Trademark,
+	[string]$Version,
+	[switch]$RequireAdmin,
+	[switch]$Virtualize,
+	[switch]$CredentialGUI,
+	[switch]$NoConfigfile,
+	[switch]$AllowExtract,
+	[string]$ProgressBarColor = "DarkGreen",
+	[switch]$longPaths
 )
+IF ($AllowExtract){$ExtractString = @"
+								else if (s.StartsWith("-extract", StringComparison.InvariantCultureIgnoreCase))
+							{
+								string[] s1 = s.Split(new string[] { ":" }, 2, StringSplitOptions.RemoveEmptyEntries);
+								if (s1.Length != 2)
+								{
+$(if (!$noConsole) {@"
+									Console.WriteLine("If you specify the -extract option you need to add a file for extraction in this way\r\n   -extract:\"<filename>\"");
+"@ } else {@"
+									MessageBox.Show("If you specify the -extract option you need to add a file for extraction in this way\r\n   -extract:\"<filename>\"", System.AppDomain.CurrentDomain.FriendlyName, MessageBoxButtons.OK, MessageBoxIcon.Error);
+"@ })
+									return 1;
+								}
+								extractFN = s1[1].Trim(new char[] { '\"' });
+							}
 
-if ($runtime20 -and $runtime40){Throw "You cannot use switches -runtime20 and -runtime40 at the same time!"}
-if ($Sta -and $Mta){Throw "You cannot use switches -Sta and -Mta at the same time!"}
-if ([string]::IsNullOrEmpty($inputFile) -or [string]::IsNullOrEmpty($outputFile)) {exit -1}
-
-$psversion = 0
-if ($PSVersionTable.PSVersion.Major -ge 4){$psversion = 4}
-if ($PSVersionTable.PSVersion.Major -eq 3){$psversion = 3}
-if ($PSVersionTable.PSVersion.Major -eq 2){$psversion = 2}
-if ($psversion -eq 0){Throw "The powershell version is unknown!"}
-$inputFile = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($inputFile)
-$outputFile = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($outputFile)
-if (!(Test-Path $inputFile -PathType Leaf)){Throw "Input file $($inputfile) not found!"}
-if ($inputFile -eq $outputFile){Throw "Input file is identical to output file!"}
-
-if (!([string]::IsNullOrEmpty($iconFile))){
-	# retrieve absolute path independent whether path is given relative oder absolute
-	$iconFile = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($iconFile)
-	if (!(Test-Path $iconFile -PathType Leaf)){Throw "Icon file $($iconFile) not found!"}
+"@
+}
+$runtime40 = $true
+Function Stop-Error {
+	PARAM(
+		$Message,
+		$ExitCode
+	)
+	Write-Error $Message
+	Exit $ExitCode
 }
 
-if ($requireAdmin -And $virtualize){Throw "-requireAdmin cannot be combined with -virtualize"}
-if (!$runtime20 -and !$runtime40){if ($psversion -eq 4){$runtime40 = $TRUE}elseif($psversion -eq 3){$runtime40 = $TRUE}else{$runtime20 = $TRUE}}
+if ($Sta -and $Mta){Stop-Error -Message "The switches -Sta and -Mta at the same time" -ExitCode 1}
+if ($requireAdmin -and $virtualize){Stop-Error -Message "-requireAdmin cannot be combined with -virtualize" -ExitCode 1}
+$psversion = 0
+if ($PSVersionTable.PSVersion.Major -ge 4){$psversion = 4} Else {Stop-Error -Message "PowerShell 4.0 or newer not installed" -ExitCode 3}
+if ($psversion -eq 0){Stop-Error -Message "The powershell version is unknown!" -ExitCode 1}
 
-if ($psversion -lt 3 -and $runtime40){Throw "You need to run ps2exe in an Powershell 3.0 or higher environment to use parameter -runtime40"}
+# retrieve absolute paths independent whether path is given relative oder absolute
+$inputFile = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($inputFile)
+$outputFile = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($outputFile)
 
-# Set default apartment mode for powershell version if not set by parameter
-if ($psversion -lt 3 -and !$Mta -and !$Sta){$Mta = $TRUE}
+if (!(Test-Path $inputFile -PathType Leaf)){Stop-Error -Message "Input file $($inputfile) not found!" -ExitCode 1}
 
-# Set default apartment mode for powershell version if not set by parameter
-if ($psversion -ge 3 -and !$Mta -and !$Sta){$Sta = $TRUE}
+if ($iconFile){$iconFile = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($iconFile)
+if (!(Test-Path $iconFile -PathType Leaf)){Stop-Error -Message "Icon file $($iconFile) not found!" -ExitCode 1}}
 
-# escape escape sequences in version info
+if ($noConfigfile -and $longPaths){Write-Warning "Option -noConfigfile disables -longPaths"}
+
+if (!$Mta -and !$Sta){$Sta = $TRUE}
 $title = $title -replace "\\", "\\"
 $product = $product -replace "\\", "\\"
 $copyright = $copyright -replace "\\", "\\"
@@ -162,34 +172,25 @@ $trademark = $trademark -replace "\\", "\\"
 $description = $description -replace "\\", "\\"
 $company = $company -replace "\\", "\\"
 
-if (![string]::IsNullOrEmpty($version)){ if ($version -notmatch "(^\d+\.\d+\.\d+\.\d+$)|(^\d+\.\d+\.\d+$)|(^\d+\.\d+$)|(^\d+$)"){Throw "Version number has to be supplied in the form n.n.n.n, n.n.n, n.n or n (with n as number)!"}}
-
 $type = ('System.Collections.Generic.Dictionary`2') -as "Type"
 $type = $type.MakeGenericType( @( ("System.String" -as "Type"), ("system.string" -as "Type") ) )
 $o = [Activator]::CreateInstance($type)
 
 $compiler20 = $FALSE
-if ($psversion -eq 3 -or $psversion -eq 4){
-	$o.Add("CompilerVersion", "v4.0")
-}
-else{
-	if (Test-Path ("$ENV:WINDIR\Microsoft.NET\Framework\v3.5\csc.exe"))
-	{ $o.Add("CompilerVersion", "v3.5")}else{
-		Write-Warning "No .Net 3.5 compiler found, using .Net 2.0 compiler."
-		Write-Warning "Therefore some methods are not available!"
-		$compiler20 = $TRUE
-		$o.Add("CompilerVersion", "v2.0")
-	}
-}
+$o.Add("CompilerVersion", "v4.0")
 
 $referenceAssembies = @("System.dll")
-if (!$noConsole){if ([System.AppDomain]::CurrentDomain.GetAssemblies() | Where-Object { $_.ManifestModule.Name -ieq "Microsoft.PowerShell.ConsoleHost.dll" }){$referenceAssembies += ([System.AppDomain]::CurrentDomain.GetAssemblies() | Where-Object { $_.ManifestModule.Name -ieq "Microsoft.PowerShell.ConsoleHost.dll" } | Select-Object-Object-Object -First 1).Location}}
-$referenceAssembies += ([System.AppDomain]::CurrentDomain.GetAssemblies() | Where-Object { $_.ManifestModule.Name -ieq "System.Management.Automation.dll" } | Select -First 1).Location
+if (!$noConsole){
+	if ([System.AppDomain]::CurrentDomain.GetAssemblies() | Where-Object { $_.ManifestModule.Name -ieq "Microsoft.PowerShell.ConsoleHost.dll" }){
+		$referenceAssembies += ([System.AppDomain]::CurrentDomain.GetAssemblies() | Where-Object { $_.ManifestModule.Name -ieq "Microsoft.PowerShell.ConsoleHost.dll" } | Select-Object -First 1).Location
+	}
+}
+$referenceAssembies += ([System.AppDomain]::CurrentDomain.GetAssemblies() | Where-Object { $_.ManifestModule.Name -ieq "System.Management.Automation.dll" } | Select-Object -First 1).Location
 
 if ($runtime40){
 	$n = New-Object System.Reflection.AssemblyName("System.Core, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")
 	[System.AppDomain]::CurrentDomain.Load($n) | Out-Null
-	$referenceAssembies += ([System.AppDomain]::CurrentDomain.GetAssemblies() | Where-Object { $_.ManifestModule.Name -ieq "System.Core.dll" } | Select -First 1).Location
+	$referenceAssembies += ([System.AppDomain]::CurrentDomain.GetAssemblies() | Where-Object { $_.ManifestModule.Name -ieq "System.Core.dll" } | Select-Object -First 1).Location
 }
 
 if ($noConsole){
@@ -199,12 +200,9 @@ if ($noConsole){
 	$n = New-Object System.Reflection.AssemblyName("System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")
 	if ($runtime40){$n = New-Object System.Reflection.AssemblyName("System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")}
 	[System.AppDomain]::CurrentDomain.Load($n) | Out-Null
-	$referenceAssembies += ([System.AppDomain]::CurrentDomain.GetAssemblies() | ? { $_.ManifestModule.Name -ieq "System.Windows.Forms.dll" } | Select -First 1).Location
-	$referenceAssembies += ([System.AppDomain]::CurrentDomain.GetAssemblies() | ? { $_.ManifestModule.Name -ieq "System.Drawing.dll" } | Select -First 1).Location
+	$referenceAssembies += ([System.AppDomain]::CurrentDomain.GetAssemblies() | Where-Object { $_.ManifestModule.Name -ieq "System.Windows.Forms.dll" } | Select-Object -First 1).Location
+	$referenceAssembies += ([System.AppDomain]::CurrentDomain.GetAssemblies() | Where-Object { $_.ManifestModule.Name -ieq "System.Drawing.dll" } | Select-Object -First 1).Location
 }
-
-$platform = "anycpu"
-if ($x64 -and !$x86) { $platform = "x64" } else { if ($x86 -and !$x64) { $platform = "x86" }}
 
 $cop = (New-Object Microsoft.CSharp.CSharpCodeProvider($o))
 $cp = New-Object System.CodeDom.Compiler.CompilerParameters($referenceAssembies, $outputFile)
@@ -212,27 +210,27 @@ $cp.GenerateInMemory = $FALSE
 $cp.GenerateExecutable = $TRUE
 
 $iconFileParam = ""
-if (!([string]::IsNullOrEmpty($iconFile))){$iconFileParam = "`"/win32icon:$($iconFile)`""}
+if ($iconFile){$iconFileParam = "`"/win32icon:$($iconFile)`""}
 
-$reqAdmParam = ""
-if ($requireAdmin){
-	$win32manifest = "<?xml version=""1.0"" encoding=""UTF-8"" standalone=""yes""?>`r`n<assembly xmlns=""urn:schemas-microsoft-com:asm.v1"" manifestVersion=""1.0"">`r`n<trustInfo xmlns=""urn:schemas-microsoft-com:asm.v2"">`r`n<security>`r`n<requestedPrivileges xmlns=""urn:schemas-microsoft-com:asm.v3"">`r`n<requestedExecutionLevel level=""requireAdministrator"" uiAccess=""false""/>`r`n</requestedPrivileges>`r`n</security>`r`n</trustInfo>`r`n</assembly>"
+$manifestParam = ""
+if ($requireAdmin -or $longPaths){
+	$manifestParam = "`"/win32manifest:$($outputFile+".win32manifest")`""
+	$win32manifest = "<?xml version=""1.0"" encoding=""UTF-8"" standalone=""yes""?>`r`n<assembly xmlns=""urn:schemas-microsoft-com:asm.v1"" manifestVersion=""1.0"">`r`n"
+	if ($longPaths){$win32manifest += "<application xmlns=""urn:schemas-microsoft-com:asm.v3"">`r`n<windowsSettings>`r`n<longPathAware xmlns=""http://schemas.microsoft.com/SMI/2016/WindowsSettings"">true</longPathAware>`r`n</windowsSettings>`r`n</application>`r`n"}
+	if ($requireAdmin){$win32manifest += "<trustInfo xmlns=""urn:schemas-microsoft-com:asm.v2"">`r`n<security>`r`n<requestedPrivileges xmlns=""urn:schemas-microsoft-com:asm.v3"">`r`n<requestedExecutionLevel level=""requireAdministrator"" uiAccess=""false""/>`r`n</requestedPrivileges>`r`n</security>`r`n</trustInfo>`r`n"}
+	$win32manifest += "</assembly>"
 	$win32manifest | Set-Content ($outputFile+".win32manifest") -Encoding UTF8
-	$reqAdmParam = "`"/win32manifest:$($outputFile+".win32manifest")`""
 }
 
-if (!$virtualize){
-	$cp.CompilerOptions = "/platform:$($platform) /target:$( if ($noConsole){'winexe'}else{'exe'}) $($iconFileParam) $($reqAdmParam)" }
-	else{
-		Write-Host "Application virtualization is activated, forcing x86 platfom."
-		$cp.CompilerOptions = "/platform:x86 /target:$( if ($noConsole) { 'winexe' } else { 'exe' } ) /nowin32manifest $($iconFileParam)"
-	}
-$cp.IncludeDebugInformation = $debugEXE
+if (!$virtualize){ $cp.CompilerOptions = "/platform:$($platform) /target:$( if ($noConsole){'winexe'}else{'exe'}) $($iconFileParam) $($manifestParam)" }else{ 
+	$cp.CompilerOptions = "/platform:x86 /target:$( if ($noConsole) { 'winexe' } else { 'exe' } ) /nowin32manifest $($iconFileParam)"}
 
-if ($debugEXE){$cp.TempFiles.KeepFiles = $TRUE}
+$cp.IncludeDebugInformation = $DebugBuild
+
+if ($DebugBuild){$cp.TempFiles.KeepFiles = $TRUE}
+
 
 $content = Get-Content -LiteralPath ($inputFile) -Encoding UTF8 -ErrorAction SilentlyContinue
-if ($content -eq $null){Throw "No data found. May be read error or file protected."}
 $scriptInp = [string]::Join("`r`n", $content)
 $script = [System.Convert]::ToBase64String(([System.Text.Encoding]::UTF8.GetBytes($scriptInp)))
 
@@ -240,17 +238,13 @@ $script = [System.Convert]::ToBase64String(([System.Text.Encoding]::UTF8.GetByte
 $culture = ""
 
 if ($lcid){
-	$culture = @"
-	System.Threading.Thread.CurrentThread.CurrentCulture = System.Globalization.CultureInfo.GetCultureInfo($lcid);
-	System.Threading.Thread.CurrentThread.CurrentUICulture = System.Globalization.CultureInfo.GetCultureInfo($lcid);
+$culture = @"
+System.Threading.Thread.CurrentThread.CurrentCulture = System.Globalization.CultureInfo.GetCultureInfo($lcid);
+System.Threading.Thread.CurrentThread.CurrentUICulture = System.Globalization.CultureInfo.GetCultureInfo($lcid);
 "@
 }
 
 $programFrame = @"
-// Simple PowerShell host created by Ingo Karstein (http://blog.karstein-consulting.com) for PS2EXE
-// Reworked and GUI support by Markus Scholtes
-// Module incorperation and help syntacs creation by Kris Gross
-
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -275,7 +269,6 @@ $(if (![string]::IsNullOrEmpty($version)) {@"
 [assembly:AssemblyVersion("$version")]
 [assembly:AssemblyFileVersion("$version")]
 "@ })
-// not displayed in details tab of properties dialog, but embedded to file
 [assembly:AssemblyDescription("$description")]
 [assembly:AssemblyCompany("$company")]
 
@@ -349,7 +342,6 @@ $(if ($noConsole -or $credentialGUI) {@"
 
 		internal static UserPwd PromptForPassword(string caption, string message, string target, string user, PSCredentialTypes credTypes, PSCredentialUIOptions options)
 		{
-			// Flags und Variablen initialisieren
 			StringBuilder userPassword = new StringBuilder(), userID = new StringBuilder(user, 128);
 			CREDUI_INFO credUI = new CREDUI_INFO();
 			if (!string.IsNullOrEmpty(message)) credUI.pszMessageText = message;
@@ -367,7 +359,6 @@ $(if ($noConsole -or $credentialGUI) {@"
 				}
 			}
 
-			// den Benutzer nach Kennwort fragen, grafischer Prompt
 			CredUIReturnCodes returnCode = CredUIPromptForCredentials(ref credUI, target, IntPtr.Zero, 0, userID, 128, userPassword, 128, ref save, flags);
 
 			if (returnCode == CredUIReturnCodes.NO_ERROR)
@@ -387,15 +378,11 @@ $(if ($noConsole -or $credentialGUI) {@"
 	internal class PS2EXEHostRawUI : PSHostRawUserInterface
 	{
 $(if ($noConsole){ @"
-		// Speicher für Konsolenfarben bei GUI-Output werden gelesen und gesetzt, aber im Moment nicht genutzt (for future use)
 		private ConsoleColor ncBackgroundColor = ConsoleColor.White;
 		private ConsoleColor ncForegroundColor = ConsoleColor.Black;
 "@ } else {@"
 		const int STD_OUTPUT_HANDLE = -11;
 
-		//CHAR_INFO struct, which was a union in the old days
-		// so we want to use LayoutKind.Explicit to mimic it as closely
-		// as we can
 		[StructLayout(LayoutKind.Explicit)]
 		public struct CHAR_INFO
 		{
@@ -407,7 +394,6 @@ $(if ($noConsole){ @"
 			internal UInt16 Attributes;
 		}
 
-		//COORD struct
 		[StructLayout(LayoutKind.Sequential)]
 		public struct COORD
 		{
@@ -415,7 +401,6 @@ $(if ($noConsole){ @"
 			public short Y;
 		}
 
-		//SMALL_RECT struct
 		[StructLayout(LayoutKind.Sequential)]
 		public struct SMALL_RECT
 		{
@@ -425,8 +410,6 @@ $(if ($noConsole){ @"
 			public short Bottom;
 		}
 
-		/* Reads character and color attribute data from a rectangular block of character cells in a console screen buffer,
-			 and the function writes the data to a rectangular block at a specified location in the destination buffer. */
 		[DllImport("kernel32.dll", EntryPoint = "ReadConsoleOutputW", CharSet = CharSet.Unicode, SetLastError = true)]
 		internal static extern bool ReadConsoleOutput(
 			IntPtr hConsoleOutput,
@@ -437,8 +420,6 @@ $(if ($noConsole){ @"
 			COORD dwBufferCoord,
 			ref SMALL_RECT lpReadRegion);
 
-		/* Writes character and color attribute data to a specified rectangular block of character cells in a console screen buffer.
-			The data to be written is taken from a correspondingly sized rectangular block at a specified location in the source buffer */
 		[DllImport("kernel32.dll", EntryPoint = "WriteConsoleOutputW", CharSet = CharSet.Unicode, SetLastError = true)]
 		internal static extern bool WriteConsoleOutput(
 			IntPtr hConsoleOutput,
@@ -449,8 +430,6 @@ $(if ($noConsole){ @"
 			COORD dwBufferCoord,
 			ref SMALL_RECT lpWriteRegion);
 
-		/* Moves a block of data in a screen buffer. The effects of the move can be limited by specifying a clipping rectangle, so
-			the contents of the console screen buffer outside the clipping rectangle are unchanged. */
 		[DllImport("kernel32.dll", SetLastError = true)]
 		static extern bool ScrollConsoleScreenBuffer(
 			IntPtr hConsoleOutput,
@@ -492,12 +471,10 @@ $(if (!$noConsole){ @"
 			{
 $(if (!$noConsole){ @"
 				if (ConsoleInfo.IsOutputRedirected())
-					// return default value for redirection. If no valid value is returned WriteLine will not be called
 					return new System.Management.Automation.Host.Size(120, 50);
 				else
 					return new System.Management.Automation.Host.Size(Console.BufferWidth, Console.BufferHeight);
 "@ } else {@"
-					// return default value for Winforms. If no valid value is returned WriteLine will not be called
 				return new System.Management.Automation.Host.Size(120, 50);
 "@ })
 			}
@@ -517,7 +494,6 @@ $(if (!$noConsole){ @"
 $(if (!$noConsole){ @"
 				return new Coordinates(Console.CursorLeft, Console.CursorTop);
 "@ } else {@"
-				// Dummywert für Winforms zurückgeben.
 				return new Coordinates(0, 0);
 "@ })
 			}
@@ -537,7 +513,6 @@ $(if (!$noConsole){ @"
 $(if (!$noConsole){ @"
 				return Console.CursorSize;
 "@ } else {@"
-				// Dummywert für Winforms zurückgeben.
 				return 25;
 "@ })
 			}
@@ -549,9 +524,31 @@ $(if (!$noConsole){ @"
 			}
 		}
 
+$(if ($noConsole){ @"
+		private Form InvisibleForm = null;
+"@ })
+
 		public override void FlushInputBuffer()
 		{
-			// Nothing to do
+$(if (!$noConsole){ @"
+			if (!ConsoleInfo.IsInputRedirected())
+			{	while (Console.KeyAvailable)
+    			Console.ReadKey(true);
+    	}
+"@ } else {@"
+			if (InvisibleForm != null)
+			{
+				InvisibleForm.Close();
+				InvisibleForm = null;
+			}
+			else
+			{
+				InvisibleForm = new Form();
+				InvisibleForm.Opacity = 0;
+				InvisibleForm.ShowInTaskbar = false;
+				InvisibleForm.Visible = true;
+			}
+"@ })
 		}
 
 		public override ConsoleColor ForegroundColor
@@ -630,7 +627,6 @@ $(if (!$noConsole) {@"
 $(if (!$noConsole){ @"
 				return new System.Management.Automation.Host.Size(Console.LargestWindowWidth, Console.LargestWindowHeight);
 "@ } else {@"
-				// Dummy-Wert für Winforms
 				return new System.Management.Automation.Host.Size(240, 84);
 "@ })
 			}
@@ -643,7 +639,6 @@ $(if (!$noConsole){ @"
 $(if (!$noConsole){ @"
 				return new System.Management.Automation.Host.Size(Console.BufferWidth, Console.BufferWidth);
 "@ } else {@"
-				// Dummy-Wert für Winforms
 				return new System.Management.Automation.Host.Size(120, 84);
 "@ })
 			}
@@ -676,13 +671,12 @@ $(if (!$noConsole) {@"
 		}
 
 		public override void ScrollBufferContents(System.Management.Automation.Host.Rectangle source, Coordinates destination, System.Management.Automation.Host.Rectangle clip, BufferCell fill)
-		{ // no destination block clipping implemented
+		{
 $(if (!$noConsole) { if ($compiler20) {@"
 			throw new Exception("Method ScrollBufferContents not implemented for .Net V2.0 compiler");
 "@ } else {@"
-			// clip area out of source range?
 			if ((source.Left > clip.Right) || (source.Right < clip.Left) || (source.Top > clip.Bottom) || (source.Bottom < clip.Top))
-			{ // clipping out of range -> nothing to do
+			{
 				return;
 			}
 
@@ -703,11 +697,10 @@ $(if (!$noConsole) { if ($compiler20) {@"
 		public override void SetBufferContents(System.Management.Automation.Host.Rectangle rectangle, BufferCell fill)
 		{
 $(if (!$noConsole){ @"
-			// using a trick: move the buffer out of the screen, the source area gets filled with the char fill.Character
 			if (rectangle.Left >= 0)
 				Console.MoveBufferArea(rectangle.Left, rectangle.Top, rectangle.Right-rectangle.Left+1, rectangle.Bottom-rectangle.Top+1, BufferSize.Width, BufferSize.Height, fill.Character, fill.ForegroundColor, fill.BackgroundColor);
 			else
-			{ // Clear-Host: move all content off the screen
+			{
 				Console.MoveBufferArea(0, 0, BufferSize.Width, BufferSize.Height, BufferSize.Width, BufferSize.Height, fill.Character, fill.ForegroundColor, fill.BackgroundColor);
 			}
 "@ })
@@ -743,7 +736,6 @@ $(if (!$noConsole){ @"
 				s.X = Console.WindowLeft;
 				s.Y = Console.WindowTop;
 "@ } else {@"
-				// Dummy-Wert für Winforms
 				s.X = 0;
 				s.Y = 0;
 "@ })
@@ -767,7 +759,6 @@ $(if (!$noConsole){ @"
 				s.Height = Console.WindowHeight;
 				s.Width = Console.WindowWidth;
 "@ } else {@"
-				// Dummy-Wert für Winforms
 				s.Height = 50;
 				s.Width = 120;
 "@ })
@@ -809,15 +800,12 @@ $(if ($noConsole){ @"
 
 		public static DialogResult Show(string sTitle, string sPrompt, ref string sValue, bool bSecure)
 		{
-			// Generate controls
 			Form form = new Form();
 			Label label = new Label();
 			TextBox textBox = new TextBox();
 			Button buttonOk = new Button();
 			Button buttonCancel = new Button();
 
-			// Sizes and positions are defined according to the label
-			// This control has to be finished first
 			if (string.IsNullOrEmpty(sPrompt))
 			{
 				if (bSecure)
@@ -829,23 +817,18 @@ $(if ($noConsole){ @"
 				label.Text = sPrompt;
 			label.Location = new Point(9, 19);
 			label.AutoSize = true;
-			// Size of the label is defined not before Add()
 			form.Controls.Add(label);
 
-			// Generate textbox
 			if (bSecure) textBox.UseSystemPasswordChar = true;
 			textBox.Text = sValue;
 			textBox.SetBounds(12, label.Bottom, label.Right - 12, 20);
 
-			// Generate buttons
-			// get localized "OK"-string
 			string sTextOK = Marshal.PtrToStringUni(MB_GetString(0));
 			if (string.IsNullOrEmpty(sTextOK))
 				buttonOk.Text = "OK";
 			else
 				buttonOk.Text = sTextOK;
 
-			// get localized "Cancel"-string
 			string sTextCancel = Marshal.PtrToStringUni(MB_GetString(1));
 			if (string.IsNullOrEmpty(sTextCancel))
 				buttonCancel.Text = "Cancel";
@@ -857,7 +840,6 @@ $(if ($noConsole){ @"
 			buttonOk.SetBounds(System.Math.Max(12, label.Right - 158), label.Bottom + 36, 75, 23);
 			buttonCancel.SetBounds(System.Math.Max(93, label.Right - 77), label.Bottom + 36, 75, 23);
 
-			// Configure form
 			if (string.IsNullOrEmpty(sTitle))
 				form.Text = System.AppDomain.CurrentDomain.FriendlyName;
 			else
@@ -871,7 +853,6 @@ $(if ($noConsole){ @"
 			form.AcceptButton = buttonOk;
 			form.CancelButton = buttonCancel;
 
-			// Show form and compute results
 			DialogResult dialogResult = form.ShowDialog();
 			sValue = textBox.Text;
 			return dialogResult;
@@ -887,18 +868,14 @@ $(if ($noConsole){ @"
 	{
 		public static int Show(System.Collections.ObjectModel.Collection<ChoiceDescription> aAuswahl, int iVorgabe, string sTitle, string sPrompt)
 		{
-			// cancel if array is empty
 			if (aAuswahl == null) return -1;
 			if (aAuswahl.Count < 1) return -1;
 
-			// Generate controls
 			Form form = new Form();
 			RadioButton[] aradioButton = new RadioButton[aAuswahl.Count];
 			ToolTip toolTip = new ToolTip();
 			Button buttonOk = new Button();
 
-			// Sizes and positions are defined according to the label
-			// This control has to be finished first when a prompt is available
 			int iPosY = 19, iMaxX = 0;
 			if (!string.IsNullOrEmpty(sPrompt))
 			{
@@ -906,14 +883,11 @@ $(if ($noConsole){ @"
 				label.Text = sPrompt;
 				label.Location = new Point(9, 19);
 				label.AutoSize = true;
-				// erst durch Add() wird die Größe des Labels ermittelt
 				form.Controls.Add(label);
 				iPosY = label.Bottom;
 				iMaxX = label.Right;
 			}
 
-			// An den Radiobuttons orientieren sich die weiteren Größen und Positionen
-			// Diese Controls also jetzt fertigstellen
 			int Counter = 0;
 			foreach (ChoiceDescription sAuswahl in aAuswahl)
 			{
@@ -923,7 +897,6 @@ $(if ($noConsole){ @"
 				{ aradioButton[Counter].Checked = true; }
 				aradioButton[Counter].Location = new Point(9, iPosY);
 				aradioButton[Counter].AutoSize = true;
-				// erst durch Add() wird die Größe des Labels ermittelt
 				form.Controls.Add(aradioButton[Counter]);
 				iPosY = aradioButton[Counter].Bottom;
 				if (aradioButton[Counter].Right > iMaxX) { iMaxX = aradioButton[Counter].Right; }
@@ -934,15 +907,12 @@ $(if ($noConsole){ @"
 				Counter++;
 			}
 
-			// Tooltip auch anzeigen, wenn Parent-Fenster inaktiv ist
 			toolTip.ShowAlways = true;
 
-			// Button erzeugen
 			buttonOk.Text = "OK";
 			buttonOk.DialogResult = DialogResult.OK;
 			buttonOk.SetBounds(System.Math.Max(12, iMaxX - 77), iPosY + 36, 75, 23);
 
-			// configure form
 			if (string.IsNullOrEmpty(sTitle))
 				form.Text = System.AppDomain.CurrentDomain.FriendlyName;
 			else
@@ -955,7 +925,6 @@ $(if ($noConsole){ @"
 			form.MaximizeBox = false;
 			form.AcceptButton = buttonOk;
 
-			// show and compute form
 			if (form.ShowDialog() == DialogResult.OK)
 			{ int iRueck = -1;
 				for (Counter = 0; Counter < aAuswahl.Count; Counter++)
@@ -1001,15 +970,13 @@ $(if ($noConsole){ @"
 				this.KeyUp += new KeyEventHandler(KeyboardForm_KeyUp);
 			}
 
-			// check for KeyDown or KeyUp?
 			public bool checkKeyDown = true;
-			// key code for pressed key
 			public KeyInfo keyinfo;
 
 			void KeyboardForm_KeyDown(object sender, KeyEventArgs e)
 			{
 				if (checkKeyDown)
-				{ // store key info
+				{
 					keyinfo.VirtualKeyCode = e.KeyValue;
 					keyinfo.Character = GetCharFromKeys(e.KeyCode, e.Shift, e.Alt & e.Control)[0];
 					keyinfo.KeyDown = false;
@@ -1023,7 +990,6 @@ $(if ($noConsole){ @"
 					if (e.Shift) { keyinfo.ControlKeyState |= ControlKeyStates.ShiftPressed; }
 					if ((e.Modifiers & System.Windows.Forms.Keys.CapsLock) > 0) { keyinfo.ControlKeyState |= ControlKeyStates.CapsLockOn; }
 					if ((e.Modifiers & System.Windows.Forms.Keys.NumLock) > 0) { keyinfo.ControlKeyState |= ControlKeyStates.NumLockOn; }
-					// and close the form
 					this.Close();
 				}
 			}
@@ -1031,7 +997,7 @@ $(if ($noConsole){ @"
 			void KeyboardForm_KeyUp(object sender, KeyEventArgs e)
 			{
 				if (!checkKeyDown)
-				{ // store key info
+				{
 					keyinfo.VirtualKeyCode = e.KeyValue;
 					keyinfo.Character = GetCharFromKeys(e.KeyCode, e.Shift, e.Alt & e.Control)[0];
 					keyinfo.KeyDown = true;
@@ -1045,7 +1011,6 @@ $(if ($noConsole){ @"
 					if (e.Shift) { keyinfo.ControlKeyState |= ControlKeyStates.ShiftPressed; }
 					if ((e.Modifiers & System.Windows.Forms.Keys.CapsLock) > 0) { keyinfo.ControlKeyState |= ControlKeyStates.CapsLockOn; }
 					if ((e.Modifiers & System.Windows.Forms.Keys.NumLock) > 0) { keyinfo.ControlKeyState |= ControlKeyStates.NumLockOn; }
-					// and close the form
 					this.Close();
 				}
 			}
@@ -1053,12 +1018,9 @@ $(if ($noConsole){ @"
 
 		public static KeyInfo Show(string sTitle, string sPrompt, bool bIncludeKeyDown)
 		{
-			// Controls erzeugen
 			KeyboardForm form = new KeyboardForm();
 			Label label = new Label();
 
-			// Am Label orientieren sich die Größen und Positionen
-			// Dieses Control also zuerst fertigstellen
 			if (string.IsNullOrEmpty(sPrompt))
 			{
 					label.Text = "Press a key";
@@ -1067,10 +1029,8 @@ $(if ($noConsole){ @"
 				label.Text = sPrompt;
 			label.Location = new Point(9, 19);
 			label.AutoSize = true;
-			// erst durch Add() wird die Größe des Labels ermittelt
 			form.Controls.Add(label);
 
-			// configure form
 			if (string.IsNullOrEmpty(sTitle))
 				form.Text = System.AppDomain.CurrentDomain.FriendlyName;
 			else
@@ -1081,7 +1041,6 @@ $(if ($noConsole){ @"
 			form.MinimizeBox = false;
 			form.MaximizeBox = false;
 
-			// show and compute form
 			form.checkKeyDown = bIncludeKeyDown;
 			form.ShowDialog();
 			return form.keyinfo;
@@ -1095,10 +1054,10 @@ $(if ($noConsole){ @"
 		private ProgressBar objProgressBar;
 		private Label objLblRemainingTime;
 		private Label objLblOperation;
-		private ConsoleColor ProgressBarColor = ConsoleColor.DarkCyan;
+		private ConsoleColor ProgressBarColor = ConsoleColor.$ProgressBarColor;
 
 		private Color DrawingColor(ConsoleColor color)
-		{  // convert ConsoleColor to System.Drawing.Color
+		{
 			switch (color)
 			{
 				case ConsoleColor.Black: return Color.Black;
@@ -1132,7 +1091,6 @@ $(if ($noConsole){ @"
 			this.ControlBox = false;
 			this.StartPosition = FormStartPosition.CenterScreen;
 
-			// Create Label
 			objLblActivity = new Label();
 			objLblActivity.Left = 5;
 			objLblActivity.Top = 10;
@@ -1140,20 +1098,16 @@ $(if ($noConsole){ @"
 			objLblActivity.Height = 16;
 			objLblActivity.Font = new Font(objLblActivity.Font, FontStyle.Bold);
 			objLblActivity.Text = "";
-			// Add Label to Form
 			this.Controls.Add(objLblActivity);
 
-			// Create Label
 			objLblStatus = new Label();
 			objLblStatus.Left = 25;
 			objLblStatus.Top = 26;
 			objLblStatus.Width = 800 - 40;
 			objLblStatus.Height = 16;
 			objLblStatus.Text = "";
-			// Add Label to Form
 			this.Controls.Add(objLblStatus);
 
-			// Create ProgressBar
 			objProgressBar = new ProgressBar();
 			objProgressBar.Value = 0;
 			objProgressBar.Style = ProgressBarStyle.Continuous;
@@ -1161,27 +1115,22 @@ $(if ($noConsole){ @"
 			objProgressBar.Size = new System.Drawing.Size(800 - 60, 20);
 			objProgressBar.Left = 25;
 			objProgressBar.Top = 55;
-			// Add ProgressBar to Form
 			this.Controls.Add(objProgressBar);
 
-			// Create Label
 			objLblRemainingTime = new Label();
 			objLblRemainingTime.Left = 5;
 			objLblRemainingTime.Top = 85;
 			objLblRemainingTime.Width = 800 - 20;
 			objLblRemainingTime.Height = 16;
 			objLblRemainingTime.Text = "";
-			// Add Label to Form
 			this.Controls.Add(objLblRemainingTime);
 
-			// Create Label
 			objLblOperation = new Label();
 			objLblOperation.Left = 25;
 			objLblOperation.Top = 101;
 			objLblOperation.Width = 800 - 40;
 			objLblOperation.Height = 16;
 			objLblOperation.Text = "";
-			// Add Label to Form
 			this.Controls.Add(objLblOperation);
 
 			this.ResumeLayout();
@@ -1253,7 +1202,6 @@ $(if ($noConsole){ @"
 	}
 "@})
 
-	// define IsInputRedirected(), IsOutputRedirected() and IsErrorRedirected() here since they were introduced first with .Net 4.5
 	public class ConsoleInfo
 	{
 		private enum FileType : uint
@@ -1326,9 +1274,9 @@ $(if ($noConsole){ @"
 $(if (!$noConsole) {@"
 		public ConsoleColor ProgressForegroundColor = ConsoleColor.Yellow;
 "@ } else {@"
-		public ConsoleColor ProgressForegroundColor = ConsoleColor.DarkCyan;
+		public ConsoleColor ProgressForegroundColor = ConsoleColor.$ProgressBarColor;
 "@ })
-		public ConsoleColor ProgressBackgroundColor = ConsoleColor.DarkCyan;
+		public ConsoleColor ProgressBackgroundColor = ConsoleColor.$ProgressBarColor;
 
 		public PS2EXEHostUI() : base()
 		{
@@ -1353,7 +1301,6 @@ $(if (!$noConsole) {@"
 				MessageBox.Show(sMeldung, sTitel);
 			}
 
-			// Titel und Labeltext für Inputbox zurücksetzen
 			ibcaption = "";
 			ibmessage = "";
 "@ })
@@ -1468,7 +1415,6 @@ $(if (!$noConsole) {@"
 				}
 			}
 $(if ($noConsole) {@"
-			// Titel und Labeltext für Inputbox zurücksetzen
 			ibcaption = "";
 			ibmessage = "";
 "@ })
@@ -1576,7 +1522,7 @@ $(if (!$noConsole -and !$credentialGUI) {@"
 
 				return new PSCredential(cred.User, x);
 			}
-			return new PSCredential("<NOUSER>", new System.Security.SecureString());
+			return null;
 "@ })
 		}
 
@@ -1622,7 +1568,7 @@ $(if (!$noConsole -and !$credentialGUI) {@"
 
 				return new PSCredential(cred.User, x);
 			}
-			return new PSCredential("<NOUSER>", new System.Security.SecureString());
+			return null;
 "@ })
 		}
 
@@ -1697,7 +1643,6 @@ $(if (!$noConsole) {@"
 			return secstr;
 		}
 
-		// called by Write-Host
 		public override void Write(ConsoleColor foregroundColor, ConsoleColor backgroundColor, string value)
 		{
 $(if (!$noConsole) {@"
@@ -1723,7 +1668,6 @@ $(if (!$noConsole) {@"
 "@ })
 		}
 
-		// called by Write-Debug
 		public override void WriteDebugLine(string message)
 		{
 $(if (!$noConsole) {@"
@@ -1733,7 +1677,6 @@ $(if (!$noConsole) {@"
 "@ })
 		}
 
-		// called by Write-Error
 		public override void WriteErrorLine(string value)
 		{
 $(if (!$noConsole) {@"
@@ -1770,7 +1713,6 @@ $(if (!$noConsole) {@"
 "@ })
 		}
 
-		// called by Write-Output
 		public override void WriteLine(string value)
 		{
 $(if (!$noConsole) {@"
@@ -1800,7 +1742,6 @@ $(if ($noConsole) {@"
 "@ })
 		}
 
-		// called by Write-Verbose
 		public override void WriteVerboseLine(string message)
 		{
 $(if (!$noConsole) {@"
@@ -1810,7 +1751,6 @@ $(if (!$noConsole) {@"
 "@ })
 		}
 
-		// called by Write-Warning
 		public override void WriteWarningLine(string message)
 		{
 $(if (!$noConsole) {@"
@@ -1984,7 +1924,7 @@ $(if (!$noConsole) {@"
 		{
 			get
 			{
-				return new Version(0, 5, 0, 12);
+				return new Version(0, 5, 0, 14);
 			}
 		}
 
@@ -2045,6 +1985,7 @@ $(if (!$noConsole) {@"
 			PS2EXE me = new PS2EXE();
 
 			bool paramWait = false;
+			string extractFN = string.Empty;
 
 			PS2EXEHostUI ui = new PS2EXEHostUI();
 			PS2EXEHost host = new PS2EXEHost(me, ui);
@@ -2087,10 +2028,10 @@ $(if (!$noConsole) {@"
 						PSDataCollection<string> colInput = new PSDataCollection<string>();
 $(if (!$runtime20) {@"
 						if (ConsoleInfo.IsInputRedirected())
-						{ // read standard input
+						{
 							string sItem = "";
 							while ((sItem = Console.ReadLine()) != null)
-							{ // add to powershell pipeline
+							{
 								colInput.Add(sItem);
 							}
 						}
@@ -2109,6 +2050,7 @@ $(if (!$runtime20) {@"
 						{
 							if (string.Compare(s, "-wait", true) == 0)
 								paramWait = true;
+							$ExtractString
 							else if (string.Compare(s, "-end", true) == 0)
 							{
 								separator = idx + 1;
@@ -2124,54 +2066,56 @@ $(if (!$runtime20) {@"
 
 						string script = System.Text.Encoding.UTF8.GetString(System.Convert.FromBase64String(@"$($script)"));
 
+						if (!string.IsNullOrEmpty(extractFN))
+						{
+							System.IO.File.WriteAllText(extractFN, script);
+							return 0;
+						}
+
 						powershell.AddScript(script);
 
-						// parse parameters
 						string argbuffer = null;
-						// regex for named parameters
 						System.Text.RegularExpressions.Regex regex = new System.Text.RegularExpressions.Regex(@"^-([^: ]+)[ :]?([^:]*)$");
 
 						for (int i = separator; i < args.Length; i++)
 						{
 							System.Text.RegularExpressions.Match match = regex.Match(args[i]);
 							if (match.Success && match.Groups.Count == 3)
-							{ // parameter in powershell style, means named parameter found
-								if (argbuffer != null) // already a named parameter in buffer, then flush it
+							{
+								if (argbuffer != null)
 									powershell.AddParameter(argbuffer);
 
 								if (match.Groups[2].Value.Trim() == "")
-								{ // store named parameter in buffer
+								{
 									argbuffer = match.Groups[1].Value;
 								}
 								else
-									// caution: when called in powershell $TRUE gets converted, when called in cmd.exe not
 									if ((match.Groups[2].Value == "$TRUE") || (match.Groups[2].Value.ToUpper() == "\x24TRUE"))
-									{ // switch found
+									{
 										powershell.AddParameter(match.Groups[1].Value, true);
 										argbuffer = null;
 									}
 									else
-										// caution: when called in powershell $FALSE gets converted, when called in cmd.exe not
 										if ((match.Groups[2].Value == "$FALSE") || (match.Groups[2].Value.ToUpper() == "\x24"+"FALSE"))
-										{ // switch found
+										{
 											powershell.AddParameter(match.Groups[1].Value, false);
 											argbuffer = null;
 										}
 										else
-										{ // named parameter with value found
+										{
 											powershell.AddParameter(match.Groups[1].Value, match.Groups[2].Value);
 											argbuffer = null;
 										}
 							}
 							else
-							{ // unnamed parameter found
+							{
 								if (argbuffer != null)
-								{ // already a named parameter in buffer, so this is the value
+								{
 									powershell.AddParameter(argbuffer, args[i]);
 									argbuffer = null;
 								}
 								else
-								{ // position parameter found
+								{
 									powershell.AddArgument(args[i]);
 								}
 							}
@@ -2179,9 +2123,7 @@ $(if (!$runtime20) {@"
 
 						if (argbuffer != null) powershell.AddParameter(argbuffer); // flush parameter buffer...
 
-						// convert output to strings
 						powershell.AddCommand("out-string");
-						// with a single string per line
 						powershell.AddParameter("stream");
 
 						powershell.BeginInvoke<string, PSObject>(colInput, colOutput, null, new AsyncCallback(delegate(IAsyncResult ar)
@@ -2232,97 +2174,112 @@ $(if (!$noConsole) {@"
 }
 "@
 #endregion
-$configFileForEXE2 = "<?xml version=""1.0"" encoding=""utf-8"" ?>`r`n<configuration><startup><supportedRuntime version=""v2.0.50727""/></startup></configuration>"
+
 $configFileForEXE3 = "<?xml version=""1.0"" encoding=""utf-8"" ?>`r`n<configuration><startup><supportedRuntime version=""v4.0"" sku="".NETFramework,Version=v4.0"" /></startup></configuration>"
+
+if ($longPaths){$configFileForEXE3 = "<?xml version=""1.0"" encoding=""utf-8"" ?>`r`n<configuration><startup><supportedRuntime version=""v4.0"" sku="".NETFramework,Version=v4.0"" /></startup><runtime><AppContextSwitchOverrides value=""Switch.System.IO.UseLegacyPathHandling=false;Switch.System.IO.BlockLongPaths=false"" /></runtime></configuration>"}
+
 $cr = $cop.CompileAssemblyFromSource($cp, $programFrame)
 if ($cr.Errors.Count -gt 0){
 	if (Test-Path $outputFile){Remove-Item $outputFile -Verbose:$FALSE}
-	Write-Error "Could not create the PowerShell .exe file because of compilation errors. Use -verbose parameter to see details."
-	$cr.Errors | ForEach-Object { Write-Verbose $_ -Verbose:$VerboseEXE}
-}else{
+	IF (!($VerboseBuild)){Stop-Error -Message "Could not create the PowerShell .exe file because of compilation errors. Use -VerboseBuild parameter to see details." -ExitCode 1}
+	$cr.Errors | ForEach-Object { Write-Error $_ -Verbose:$VerboseBuild}
+} else {
 	if (Test-Path $outputFile){
-		if ($debugEXE){
+		if ($DebugBuild){
 			$cr.TempFiles | Where-Object { $_ -ilike "*.cs" } | Select-Object -first 1 | ForEach-Object {
 				$dstSrc = ([System.IO.Path]::Combine([System.IO.Path]::GetDirectoryName($outputFile), [System.IO.Path]::GetFileNameWithoutExtension($outputFile)+".cs"))
 				Copy-Item -Path $_ -Destination $dstSrc -Force
 			}
 			$cr.TempFiles | Remove-Item -Verbose:$FALSE -Force -ErrorAction SilentlyContinue
 		}
-		if (!$noConfigfile){
-			if ($runtime20){$configFileForEXE2 | Set-Content ($outputFile+".config") -Encoding UTF8}
-			if ($runtime40){$configFileForEXE3 | Set-Content ($outputFile+".config") -Encoding UTF8}
-		}
-	} else {Write-Error "Output file $outputFile not written"}
+		if (!$noConfigfile){if ($runtime40){$configFileForEXE3 | Set-Content ($outputFile+".config") -Encoding UTF8}}
+	} else {Stop-Error -Message "$outputFile was not created" -ExitCode 1}
 }
-if ($requireAdmin){if(Test-Path $($outputFile+".win32manifest")){Remove-Item $($outputFile+".win32manifest") -Verbose:$FALSE}}
+
+if ($requireAdmin -or $longPaths){ if (Test-Path $($outputFile+".win32manifest")){Remove-Item $($outputFile+".win32manifest") -Verbose:$FALSE}}
 }
 
 function Convert-FileToBase64 {
 <#
-	.SYNOPSIS
-	Convert a file to base64
-	.DESCRIPTION
-	You can convert any file to base64 that can later be called by a script or imbeded in a script
-	.PARAMETER InFile
-	The path to the file that is to be converted
-	.PARAMETER OutFile
-	path to the output file (this should be a txt file)
-	.NOTES
-	Contact: Contact@mosacimk.com
-	Version 1.0.0.1
+.SYNOPSIS
+Convert a file to base64 code
+.DESCRIPTION
+You can convert any file to base64 that can later be called by a script or embedded in a script
+.PARAMETER InFile
+Path to the file that is to be converted
+.PARAMETER OutFile
+Path to the output file
+.PARAMETER BufferSize
+Size of each chunck to be convered, should be a multiple of 3
+.NOTES
+Contact: Contact@mosacimk.com
+Version 2.0.0
+Original version: https://mnaoumov.wordpress.com/2013/08/20/efficient-base64-conversion-in-powershell/
 
-	How To use the base64 code
-	$BaseCode = @" <CodeFromTextFile> "@
-	Set-Content -Path "<NameOfFile>" -Value $BaseCode -Encoding Byte
-	.LINK
-	http://MosaicMK.com
+How To use the base64 code
+$BaseCode = @" <CodeFromTextFile> "@
+Set-Content -Path "<NameOfFile>" -Value $BaseCode -Encoding Byte
+or for large files use the Convert-FileFromBase64 function
+
+.LINK
+https://www.mosaicmk.com
 #>
-    PARAM(
-        [Parameter(Mandatory=$true)]
-        [string]$InFile,
-        [Parameter(Mandatory=$true)]
-        [string]$outFile
-    )
-    try {
-        $encodedImage = [convert]::ToBase64String((get-content $inFile -encoding byte))
-		$encodedImage -replace ".{80}" , "$&`r`n" | set-content $outFile
-    }
-    catch {Write-Error "$_"}
+PARAM(
+	[Parameter(Mandatory=$true)]
+	[string]$InFile,
+	[Parameter(Mandatory=$true)]
+	[string]$OutFile,
+	[int]$BufferSize = 9000
+)
+try {
+	$InFile = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($InFile)
+	$OutFile = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($OutFile)
+	# should be a multiplier of 3
+	$buffer = New-Object byte[] $bufferSize
+	$reader = [System.IO.File]::OpenRead($InFile)
+	$writer = [System.IO.File]::CreateText($OutFile)
+	$bytesRead = 0
+	do{
+		$bytesRead = $reader.Read($buffer, 0, $bufferSize);
+		$writer.Write([Convert]::ToBase64String($buffer, 0, $bytesRead));
+	} while ($bytesRead -eq $bufferSize);
+	$reader.Dispose()
+	$writer.Dispose()
+}
+catch {Write-Error "$_"}
 }
 
 function Convert-FileToDll {
 <#
-    .SYNOPSIS
-	Convert a ps1 file to a encrypted file
-	.DESCRIPTION
-	Convert a PowerShell script file to a encryped file using 256bit AES encryption
-	.PARAMETER InFile
-	Path to the PowerShell script
-	.PARAMETER OutFile
-	Path to wheer the encrypted file is to be placed file
-	.PARAMETER KeyToFile
-	Path to where the key is to be written
-	.PARAMETER KeyToHost
-	Writes the key to the host window
-	.PARAMETER KeyFile
-	Path to a pre created file containing the key you wish to use (Can be created with New-AESKeyFile)
-	.EXAMPLE
-	PS2DLL.ps1 -InFile C:\Read-File.ps1 -OutFile C:\Read-File.dll -KeyToFile
-	This will enctypt Read-File.ps1 to read-file.dll and print the key
-	.NOTES
-	Contact: Contact@mosaicMK.com
-	Version 1.1.1.2
-
-	To Use the dll in a script
-	$Path = <Path to DLL>
-	trap { "Decryption failed"; break }
-	$secure = Get-Content $path | ConvertTo-SecureString -Key (<Content of key file seperated by a ",">)
-	$BSTR = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($Secure)
-	$script = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto($BSTR)
-	Invoke-Expression $script
-
-	.LINK
-	https://www.MosaicMK.com/
+.SYNOPSIS
+Convert a ps1 file to a encrypted file
+.DESCRIPTION
+Convert a PowerShell script file to a encryped file using 256bit AES encryption
+To Use the dll in a script:
+$Path = <Path to DLL>
+$secure = Get-Content $path | ConvertTo-SecureString -Key (<Content of key file seperated by a ",">)
+$BSTR = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($Secure)
+$script = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto($BSTR)
+Invoke-Expression $script
+.PARAMETER InFile
+Path to the PowerShell script
+.PARAMETER OutFile
+Path to wheer the encrypted file is to be placed file
+.PARAMETER KeyToFile
+Path to where the key is to be written
+.PARAMETER KeyToHost
+Writes the key to the host window
+.PARAMETER KeyFile
+Path to a pre created file containing the key you wish to use (Can be created with New-AESKeyFile)
+.EXAMPLE
+PS2DLL.ps1 -InFile C:\Read-File.ps1 -OutFile C:\Read-File.dll -KeyToFile
+This will enctypt Read-File.ps1 to read-file.dll and print the key
+.NOTES
+Contact: Contact@mosaicMK.com
+Version 1.1.2
+.LINK
+https://www.mosaicmk.com
 #>
 	PARAM
 	(
@@ -2356,26 +2313,23 @@ function Convert-FileToDll {
 }
 
 function New-AESKeyFile {
-	<#
-    .SYNOPSIS
-	Create a file containing a 256 bit key
-	.DESCRIPTION
-	Creates a file that can be used with Convert-FileToDll
-	.PARAMETER KeyFile
-	Path to where the Key file is to be created
-	.EXAMPLE
-	New-AESKeyFile -KeyFile C:\File.txt
-	Creates the file at C:\File.txt
-	.NOTES
-	Contact: Contact@mosaicMK.com
-	Version 1.0.0.0
-	.LINK
-	https://www.MosaicMK.com/
-	#>
-	param (
-		[Parameter(Mandatory=$true)]
-		[string]$KeyFile
-		)
+<#
+.SYNOPSIS
+Create a file containing a 256 bit key
+.DESCRIPTION
+Creates a file that can be used with Convert-FileToDll
+.PARAMETER KeyFile
+Path to where the Key file is to be created
+.EXAMPLE
+New-AESKeyFile -KeyFile C:\File.txt
+Creates the file at C:\File.txt
+.NOTES
+Contact: Contact@mosaicMK.com
+Version 1.0.0
+.LINK
+https://www.Mosaicmk.com/
+#>
+	param ([Parameter(Mandatory=$true)][string]$KeyFile)
 	try {
 		[byte[]]$KeyGen = (0..100) + (100..200) | Get-Random -Count 32 -ErrorAction Stop
 		Set-Content -Value $KeyGen -Path "$KeyFile" -ErrorAction Stop
@@ -2384,40 +2338,40 @@ function New-AESKeyFile {
 }
 
 function Convert-StringToSecureString {
-	<#
-    .SYNOPSIS
-    Convert string to a secure string
-    .DESCRIPTION
-    Convert a strign to a 256 bit ecrypet string to be used in a script
-    .PARAMETER InString
-    The string to be encrypted
-	.PARAMETER SecureStringToFile
-	Writes the secure stringto a file
-	.PARAMETER SecureStringToHost
-	Writes the string to the host window
-	.PARAMETER KeyToFile
-	Writes the decryption key to a file
-	.PARAMETER KeyToHost
-	Writes the decryption key to the host window
-	.EXAMPLE
-	Convert-StringToSecureString -InString "John Smith lives at 8888 Park Drive" -SecureStringToHost -KeyToHost
-	Encrypts the string "John Smith lives at 8888 Park Drive" and Write they encrypted string to the host and the
-	key used to encrypt the string.
-    .NOTES
-    Contact: Contact@mosaicMK.com
-    Version 1.1.0.1
-    .LINK
-    http://www.mosaicMK.com/
+<#
+.SYNOPSIS
+Convert string to a secure string
+.DESCRIPTION
+Convert a strign to a 256 bit ecrypet string to be used in a script
+.PARAMETER InString
+The string to be encrypted
+.PARAMETER SecureStringToFile
+Writes the secure stringto a file
+.PARAMETER SecureStringToHost
+Writes the string to the host window
+.PARAMETER KeyToFile
+Writes the decryption key to a file
+.PARAMETER KeyToHost
+Writes the decryption key to the host window
+.EXAMPLE
+Convert-StringToSecureString -InString "John Smith lives at 8888 Park Drive" -SecureStringToHost -KeyToHost
+Encrypts the string "John Smith lives at 8888 Park Drive" and Write they encrypted string to the host and the
+key used to encrypt the string.
+.NOTES
+Contact: Contact@mosaicmk.com
+Version 1.1.1
+.LINK
+http://www.mosaicmk.com/
 #>
-		PARAM(
-		[Parameter(Mandatory=$true)]
-		[string]$InString,
-		[string]$SecureStringToFile,
-		[switch]$SecureStringToHost,
-		[string]$KeyToFile,
-		[switch]$KeyToHost,
-		[string]$KeyFile
-	)
+PARAM(
+	[Parameter(Mandatory=$true)]
+	[string]$InString,
+	[string]$SecureStringToFile,
+	[switch]$SecureStringToHost,
+	[string]$KeyToFile,
+	[switch]$KeyToHost,
+	[string]$KeyFile
+)
 
 	IF (!($KeyFile)){[byte[]]$Key = (0..100) + (100..200)| Get-Random -Count 32 -ErrorAction Stop} else {[byte[]]$Key = Get-Content "$KeyFile" -ErrorAction Stop}
 	$secure = ConvertTo-SecureString $InString -asPlainText -force
@@ -2438,14 +2392,11 @@ Prints the AES key from a file to the host window allow the key to be pasted int
 Path to where the Key file is
 .NOTES
 Contact: Contact@mosaicMK.com
-Version 1.0.0.0
+Version 1.0.0
 .LINK
-https://www.MosaicMK.com/
+https://www.mosaicmk.com/
 #>
-	param (
-			[Parameter(Mandatory=$true)]
-			[string]$KeyFile
-		)
+param ([Parameter(Mandatory=$true)][string]$KeyFile)
 	try {
 		$Rkey = Get-Content "$KeyFile" -ErrorAction Stop
 		$RKey = $Rkey -join ","
@@ -2453,4 +2404,48 @@ https://www.MosaicMK.com/
 		$KeyObject | Add-Member -MemberType NoteProperty -Name Key -Value $Rkey
 		$KeyObject
 	} Catch {Write-Error "$_"}
+}
+
+function Convert-FileFromBase64{
+<#
+.SYNOPSIS
+Convert a file from base64 code
+.DESCRIPTION
+Converts a file stored as BASE64 code back to its Original form
+.PARAMETER InFile
+Path to the file that is to be converted from
+.PARAMETER OutFile
+Path to the output file
+.PARAMETER BufferSize
+Size of each chunck to be convered, should be a multiple of 3
+.NOTES
+Contact: Contact@mosacimk.com
+Version 1.0.0
+Original version: https://mnaoumov.wordpress.com/2013/08/20/efficient-base64-conversion-in-powershell/
+.LINK
+https://www.mosaicmk.com
+#>
+
+PARAM(
+	[Parameter(Mandatory=$true)]
+	[string]$InFile,
+	[Parameter(Mandatory=$true)]
+	[string]$OutFile,
+	[int]$BufferSize = 9000
+)
+try {
+	$InFile = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($InFile)
+	$OutFile = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($OutFile)
+	$buffer = New-Object char[] $bufferSize
+	$reader = [System.IO.File]::OpenText($InFile)
+	$writer = [System.IO.File]::OpenWrite($OutFile)
+	$bytesRead = 0
+	do{
+		$bytesRead = $reader.Read($buffer, 0, $bufferSize);
+		$bytes = [Convert]::FromBase64CharArray($buffer, 0, $bytesRead);
+		$writer.Write($bytes, 0, $bytes.Length);
+	} while ($bytesRead -eq $bufferSize);
+	$reader.Dispose()
+	$writer.Dispose()
+} catch {Write-Error "$_"}
 }

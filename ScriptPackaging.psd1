@@ -11,7 +11,7 @@
 RootModule = 'ScriptPackaging.psm1'
 
 # Version number of this module.
-ModuleVersion = '1.3.1'
+ModuleVersion = '2.0.0'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
@@ -26,7 +26,7 @@ Author = 'MosaicMK Software LLC'
 CompanyName = 'MosaicMK Software LLC'
 
 # Copyright statement for this module
-Copyright = '(c) 2018 MosaicMK Software LLC. All rights reserved.'
+Copyright = '(c) 2019 MosaicMK Software LLC. All rights reserved.'
 
 # Description of the functionality provided by this module
 Description = 'PowerShell Module to help package a PowerShell script or script resorces to be used in an exe'
@@ -50,7 +50,7 @@ PowerShellVersion = '5.0'
 # ProcessorArchitecture = ''
 
 # Modules that must be imported into the global environment prior to importing this module
-# RequiredModules = @()
+#RequiredModules = @()
 
 # Assemblies that must be loaded prior to importing this module
 # RequiredAssemblies = @()
@@ -103,10 +103,10 @@ PrivateData = @{
         ProjectUri = 'https://www.mosaicmk.com'
 
         # A URL to an icon representing this module.
-        # IconUri = ''
+        IconUri = 'https://3.bp.blogspot.com/-5AH8bMtdvcU/XBpsEqKMoFI/AAAAAAAABIw/cRbUnQwTwdIpZapoCD4ifYatBmy717zSgCLcBGAs/s1600/logo-transparent_NoWords.png.ico'
 
         # ReleaseNotes of this module
-        # ReleaseNotes = ''
+        ReleaseNotes = 'https://github.com/mosaicMK/Script-Packaging-Module'
 
     } # End of PSData hashtable
 

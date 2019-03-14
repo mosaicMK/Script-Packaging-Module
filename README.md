@@ -1,6 +1,9 @@
 # Script-Packaging-Module
 PowerShell Module to help package a PowerShell script or script resorces 
 
+Created By MosaicMK Software LLC
+https://www.mosaicmk.com
+
 ## Installing
 Download the current branch and import the ScriptPackage.psd1 file into PowerShell
 or you can install the module from our PowerShell Gallery repository
